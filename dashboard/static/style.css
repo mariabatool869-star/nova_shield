@@ -30,6 +30,11 @@
 
 body {
     background-color: var(--bg-dark);
+    /* Subtle high-tech background grid */
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 30px 30px;
     color: var(--text-main);
     font-family: var(--font-sans);
     font-size: 14px;
@@ -44,24 +49,46 @@ header {
     justify-content: space-between;
     align-items: center;
     padding: 16px 32px;
-    background: rgba(15, 19, 28, 0.8);
-    backdrop-filter: blur(12px);
+    background: rgba(15, 19, 28, 0.85);
+    backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 100;
 }
 
-.logo {
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 1px;
+.logo-container {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+}
+
+.logo-mark {
+    width: 28px;
+    height: 28px;
+}
+
+.logo-text {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
     color: var(--text-main);
 }
-.shield-icon { font-size: 22px; }
+.logo-text span {
+    color: var(--accent);
+    font-weight: 400;
+}
+
+.system-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    border-left: 1px solid var(--border-light);
+    padding-left: 12px;
+    margin-left: 4px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
 
 .header-right {
     display: flex;
