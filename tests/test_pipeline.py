@@ -1,30 +1,32 @@
 from minions.optic import Optic
+from minions.cortex import Cortex
 from minions.servo import Servo
 from minions.vault import Vault
 
-# 1. Bring the units online
 optic = Optic()
+cortex = Cortex()
 servo = Servo()
 vault = Vault()
 
-# 2. Read the fake log file
 with open("data/sample.log", "r") as f:
     lines = f.readlines()
 
-alert_counter = 200
+alert_counter = 300
 print("NX-01 OPTIC is scanning logs...\n")
 
-# 3. OPTIC scans every line
 for line in lines:
     alert = optic.scan(line, alert_counter)
     
     if alert:
         print(f"[{optic.UNIT_ID} {optic.CALLSIGN}] Threat found!")
         
-        # 4. SERVO asks the human
-        approved_alert = servo.handle(alert)
+        # 1. CORTEX analyzes and explains
+        enriched_alert = cortex.explain(alert)
         
-        # 5. VAULT seals the human's decision
+        # 2. SERVO asks the human
+        approved_alert = servo.handle(enriched_alert)
+        
+        # 3. VAULT seals it
         vault.record(approved_alert)
         alert_counter += 1
     else:
