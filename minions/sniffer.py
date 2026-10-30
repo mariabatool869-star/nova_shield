@@ -9,7 +9,6 @@ class Sniffer:
         self.callback = callback_function
         self.is_running = False
         self.thread = None
-        # Store timestamps of connections to detect bursts
         self.connection_tracker = {}
         self.lock = threading.Lock()
 
@@ -18,36 +17,31 @@ class Sniffer:
             src_ip = packet[IP].src
             dst_port = packet[TCP].dport
             
-            # 1. TRUE ATTACK SIGNAL: Traffic targeting Port 22 (SSH)
-            if dst_port == 22:
-                print(f"🚨 REAL SSH ATTACK DETECTED FROM {src_ip}")
-                log_line = f"Live TCP: Failed password for root from {src_ip} port 5555 ssh2"
-                self.callback(log_line)
-            
-            # 2. BURST DETECTION: If a single IP makes 5+ connections in 3 seconds
-            # (This catches aggressive port scanners and DDoS)
-            else:
+            # Only track external-to-internal or SSH traffic to reduce noise
+            if dst_port == 22 or dst_port == 5000:
                 now = time.time()
                 with self.lock:
                     if src_ip not in self.connection_tracker:
                         self.connection_tracker[src_ip] = []
                     
-                    # Clean old timestamps
                     self.connection_tracker[src_ip] = [
                         t for t in self.connection_tracker[src_ip] if now - t < 3.0
                     ]
                     self.connection_tracker[src_ip].append(now)
                     
-                    if len(self.connection_tracker[src_ip]) > 5:
-                        print(f"🚨 PORT SCAN / DDOS DETECTED FROM {src_ip} (6+ connections in 3s)")
-                        log_line = f"Live TCP: Failed password for root from {src_ip} port 5555 ssh2"
+                    count = len(self.connection_tracker[src_ip])
+                    
+                    if count > 5:
+                        print(f"🚨 BURST DETECTED: {src_ip} ({count} connections in 3s)")
+                        # Pass the REAL data to OPTIC
+                        log_line = f"Live TCP: {count} connections from {src_ip} on port {dst_port}"
                         self.callback(log_line)
-                        self.connection_tracker[src_ip] = [] # Reset counter
+                        self.connection_tracker[src_ip] = []
 
     def start(self):
         if not self.is_running:
             self.is_running = True
-            print("🟢 NX-01 OPTIC: Live Sniffer started (watching for SSH and Port Scans).")
+            print("🟢 NX-01 OPTIC: Live Sniffer started (watching for real bursts).")
             
             self.thread = threading.Thread(
                 target=lambda: sniff(iface="en0", prn=self._packet_callback, store=False, timeout=3600),

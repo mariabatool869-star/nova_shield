@@ -30,7 +30,7 @@ def process_live_packet(log_line):
         enriched = cortex.explain(alert)
         latest_live_alert = enriched
 
-# START THE SNIFFER HERE
+# Start the sniffer
 sniffer = Sniffer(process_live_packet)
 sniffer.start()
 
@@ -41,10 +41,16 @@ def index():
 @app.route('/api/scan')
 def scan():
     global pending_alert
-    bad_log = "Oct 30 12:01:06 server sshd[1236]: Failed password for root from 10.0.0.99 port 5555 ssh2"
+    # This line matches the NEW sniffer format
+    bad_log = "Live TCP: 15 connections from 10.0.0.99 on port 22"
+    
     alert = optic.scan(bad_log, decision_id=500 + len(glob.glob("records/*.json")))
+    if not alert:
+        return jsonify({"status": "clean"})
+    
     enriched = cortex.explain(alert)
     pending_alert = enriched
+    
     return jsonify({
         "status": "threat",
         "score": enriched["score"],
