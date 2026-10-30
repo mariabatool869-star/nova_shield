@@ -11,12 +11,14 @@ from minions.optic import Optic
 from minions.cortex import Cortex
 from minions.vault import Vault
 from minions.sniffer import Sniffer
+from minions.servo import Servo
 
 app = Flask(__name__)
 
 optic = Optic()
 cortex = Cortex()
 vault = Vault()
+servo = Servo()
 
 pending_alert = None
 latest_live_alert = None
@@ -41,7 +43,6 @@ def index():
 @app.route('/api/scan')
 def scan():
     global pending_alert
-    # This line matches the NEW sniffer format
     bad_log = "Live TCP: 15 connections from 10.0.0.99 on port 22"
     
     alert = optic.scan(bad_log, decision_id=500 + len(glob.glob("records/*.json")))
@@ -83,9 +84,13 @@ def decide():
         if decision == 'approve':
             pending_alert["action"] = "block"
             pending_alert["human_decision"] = "approved"
+            # Trigger the block!
+            src_ip = pending_alert["features"].get("src_ip", "unknown")
+            servo.execute_block(src_ip)
         else:
             pending_alert["action"] = "monitor_only"
             pending_alert["human_decision"] = "rejected"
+            
         vault.record(pending_alert)
         pending_alert = None
         return jsonify({"status": "success"})
@@ -93,25 +98,24 @@ def decide():
 
 @app.route('/api/verify')
 def verify():
-    files = sorted(glob.glob("records/decision_*.json"), key=lambda p: int(p.split("_")[-1].split(".")[0]))
-    if not files: return jsonify({"status": "empty", "count": 0})
-    expected_prev = "GENESIS"
-    for path in files:
-        with open(path) as f:
-            entry = json.load(f)
-        if entry["prev_hash"] != expected_prev: return jsonify({"status": "compromised"})
-        payload = {k: v for k, v in entry.items() if k != "hash"}
-        recomputed = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
-        if recomputed != entry["hash"]: return jsonify({"status": "compromised"})
-        expected_prev = entry["hash"]
-    return jsonify({"status": "intact", "count": len(files)})
+    is_intact, count = vault.verify_chain()
+    if is_intact:
+        return jsonify({"status": "intact", "count": count})
+    return jsonify({"status": "compromised", "count": count})
 
 @app.route('/api/history')
 def history():
-    files = sorted(glob.glob("records/decision_*.json"), key=lambda p: int(p.split("_")[-1].split(".")[0]), reverse=True)
+    rows = vault.get_all()
     records = []
-    for path in files:
-        with open(path) as f: records.append(json.load(f))
+    for r in rows:
+        records.append({
+            "decision_id": r[0],
+            "alert_type": r[1],
+            "score": r[2],
+            "human_decision": r[3],
+            "hash": r[4],
+            "recorded_at": r[6]
+        })
     return jsonify({"records": records})
 
 if __name__ == '__main__':

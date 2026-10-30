@@ -1,0 +1,40 @@
+{
+  "decision_id": 501,
+  "alert_type": "port_scan_on_22",
+  "features": {
+    "failed_logins_60s": 150,
+    "is_root_target": 1,
+    "src_ip_unseen": 1,
+    "avg_packet_size": 64,
+    "duration_seconds": 0.5
+  },
+  "score": 1.0,
+  "explanation": [
+    {
+      "feature": "avg_packet_size",
+      "impact": 0.315,
+      "direction": "increases_risk",
+      "magnitude": 0.3151711814628973
+    },
+    {
+      "feature": "failed_logins_60s",
+      "impact": 0.292,
+      "direction": "increases_risk",
+      "magnitude": 0.29168610800257044
+    },
+    {
+      "feature": "duration_seconds",
+      "impact": 0.159,
+      "direction": "increases_risk",
+      "magnitude": 0.15890350649063012
+    }
+  ],
+  "action": "monitor_only",
+  "raw_log": "Live TCP: 15 connections from 10.0.0.99 on port 22",
+  "counterfactual": "If packet sizes were larger (indicating real data), risk would drop.",
+  "human_decision": "rejected",
+  "unit": "NX-04 VAULT",
+  "recorded_at": "2026-10-30T15:40:04.613227+00:00",
+  "prev_hash": "GENESIS",
+  "hash": "59776e8550449b92a7b2cd0077f75e3ae9cff20c2c401d27eecd3923c19aa4a6"
+}
