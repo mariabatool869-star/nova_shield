@@ -1,15 +1,16 @@
 {
-  "decision_id": 100,
+  "decision_id": 200,
   "alert_type": "ssh_failed_login",
   "score": 0.85,
   "explanation": [
     "Failed login attempt for user: root",
     "Source IP: 10.0.0.99"
   ],
-  "action": "monitor",
+  "action": "block",
   "raw_log": "Oct 30 12:01:05 server sshd[1235]: Failed password for root from 10.0.0.99 port 5555 ssh2",
+  "human_decision": "approved",
   "unit": "NX-04 VAULT",
-  "recorded_at": "2026-10-30T12:40:42.546494+00:00",
+  "recorded_at": "2026-10-30T12:47:28.508674+00:00",
   "prev_hash": "GENESIS",
-  "hash": "1748c8dd958d0578f99c0a079e8da76cff79e48b254ca17a8ca5f1701069ab5e"
+  "hash": "44648e17125535c758ae6ee67ee35478d2cf066815334d399a9a9969dc7c151a"
 }
