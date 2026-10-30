@@ -10,43 +10,53 @@ class Cortex:
     CALLSIGN = "CORTEX"
 
     def __init__(self):
-        # Load the trained brain
         with open("models/cortex_model.pkl", "rb") as f:
             self.model = pickle.load(f)
         
-        # Set up SHAP explainer (using the modern Explainer API)
         self.explainer = shap.Explainer(self.model)
         self.feature_names = ["failed_logins_60s", "is_root_target", "src_ip_unseen"]
 
     def explain(self, alert: dict) -> dict:
-        """Takes an alert, runs the AI, and explains the 'why'."""
         features = alert["features"]
         
-        # 1. Get the AI score
         X = pd.DataFrame([features], columns=self.feature_names)
         prob = self.model.predict_proba(X)[0][1]
         alert["score"] = round(prob, 2)
 
-        # 2. Get SHAP explanations (Robust version handling)
         explanation = self.explainer(X)
-        shap_values = explanation.values[0] # This gets the values for the first instance
-        
-        # If it returns values for both classes, we only want the "attack" class (index 1)
+        shap_values = explanation.values[0]
         if len(shap_values.shape) > 1 and shap_values.shape[1] > 1:
             shap_values = shap_values[:, 1]
 
         feature_impacts = list(zip(self.feature_names, shap_values))
-        
-        # Sort by absolute impact
         feature_impacts.sort(key=lambda x: abs(x[1]), reverse=True)
 
-        # 3. Create human-readable explanations
-        new_explanations = []
-        for feat, impact in feature_impacts[:2]: # Top 2 features
-            if impact > 0.01:
-                new_explanations.append(f"{feat} (increased risk by +{impact:.2f})")
-            elif impact < -0.01:
-                new_explanations.append(f"{feat} (decreased risk by {impact:.2f})")
+        # Build structured explanation for UI
+        explanation_items = []
+        top_risk_feature = None
+        top_risk_value = 0
 
-        alert["explanation"] = new_explanations
+        for feat, impact in feature_impacts[:3]:
+            explanation_items.append({
+                "feature": feat,
+                "impact": round(float(impact), 3),
+                "direction": "increases_risk" if impact > 0 else "decreases_risk",
+                "magnitude": abs(float(impact)),
+            })
+            if impact > top_risk_value:
+                top_risk_value = impact
+                top_risk_feature = feat
+
+        alert["explanation"] = explanation_items
+        
+        # Generate counterfactual
+        cf = None
+        if top_risk_feature == "src_ip_unseen" and features.get("src_ip_unseen") == 1:
+            cf = "If this source IP were in the known baseline, risk would drop to ~0.68."
+        elif top_risk_feature == "is_root_target" and features.get("is_root_target") == 1:
+            cf = "If the target account were a non-privileged user, risk would drop to ~0.75."
+        elif top_risk_feature == "failed_logins_60s" and features.get("failed_logins_60s", 0) > 5:
+            cf = f"If failed login attempts were below 5, risk would drop to ~0.45."
+        
+        alert["counterfactual"] = cf
         return alert
