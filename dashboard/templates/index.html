@@ -4,22 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NovaShield | Verifiable Triage</title>
-    <!-- Import Professional Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-    <!-- Top Navigation -->
     <header>
-        <div class="logo">
-            <span class="shield-icon">🛡️</span> NOVASHIELD
+        <div class="logo-container">
+            <svg class="logo-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 2L4 8V16C4 23.5 9.5 29 16 30C22.5 29 28 23.5 28 16V8L16 2Z" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M16 10V22M11 13L16 18L21 13" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="logo-text">NOVA<span>SHIELD</span></div>
+            <div class="system-tag">SOC CONSOLE v1.0</div>
         </div>
         
         <div class="header-right">
-            <!-- Live Hash Chain Visual -->
             <div class="vault-chain" id="vault-chain">
                 <span class="chain-badge checking">Checking Ledger...</span>
             </div>
@@ -27,10 +29,8 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main>
-        
-        <!-- RESTING STATE (No Threat) -->
+        <!-- RESTING STATE -->
         <div id="resting-state" class="resting-card">
             <div class="pulse-ring"></div>
             <h2>All clear. No pending decisions.</h2>
@@ -40,39 +40,28 @@
         <!-- THREAT STATE -->
         <div id="alert-container" class="hidden">
             <div class="alert-card">
-                
-                <!-- Card Header -->
                 <div class="alert-header">
                     <div class="alert-title">
                         <span class="danger-badge">THREAT DETECTED</span>
                         <span class="alert-type">SSH Brute Force</span>
                     </div>
-                    <div class="confidence-score">
-                        Confidence: <span id="alert-score">0.00</span>
-                    </div>
+                    <div class="confidence-score">Confidence: <span id="alert-score">0.00</span></div>
                 </div>
 
-                <!-- Raw Log -->
                 <div class="raw-log-box">
                     <span class="log-label">RAW TELEMETRY:</span>
                     <code id="alert-raw-log">Waiting for data...</code>
                 </div>
 
-                <!-- CORTEX AI Explanation (SHAP Bars) -->
                 <div class="cortex-box">
                     <h3>🧠 NX-02 CORTEX Evidence</h3>
-                    <div id="shap-bars" class="shap-container">
-                        <!-- SHAP bars will be injected here by JS -->
-                    </div>
-                    
-                    <!-- Counterfactual Hint -->
+                    <div id="shap-bars" class="shap-container"></div>
                     <div class="counterfactual-hint" id="counterfactual-box">
                         <span class="cf-icon">💡</span>
                         <span id="alert-counterfactual">Analyzing decision boundary...</span>
                     </div>
                 </div>
 
-                <!-- SERVO Gate -->
                 <div class="servo-box">
                     <h3>🔐 NX-03 SERVO: Human Approval Required</h3>
                     <p>Do you authorize blocking this traffic?</p>
@@ -81,7 +70,31 @@
                         <button class="btn-reject" onclick="makeDecision('reject')">✗ Reject (Monitor Only)</button>
                     </div>
                 </div>
+            </div>
+        </div>
 
+        <!-- NEW: THE IMMUTABLE AUDIT LEDGER -->
+        <div class="audit-panel">
+            <div class="audit-header">
+                <h3>⛓️ NX-04 VAULT: Immutable Audit Ledger</h3>
+                <span class="audit-subtitle">Cryptographically sealed human decisions</span>
+            </div>
+            <div class="table-container">
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Time (UTC)</th>
+                            <th>Target</th>
+                            <th>AI Score</th>
+                            <th>Human Decision</th>
+                            <th>SHA-256 Hash</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-body">
+                        <tr><td colspan="6" class="empty-table">No records yet. Trigger a scan and make a decision.</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 

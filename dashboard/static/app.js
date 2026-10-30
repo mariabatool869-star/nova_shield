@@ -1,4 +1,3 @@
-// Check ledger status on load and after decisions
 async function checkLedger() {
     try {
         const res = await fetch('/api/verify');
@@ -12,12 +11,37 @@ async function checkLedger() {
         } else {
             chain.innerHTML = `<span class="chain-badge checking">Ledger: Empty</span>`;
         }
-    } catch (e) {
-        console.error("Ledger check failed", e);
-    }
+    } catch (e) { console.error(e); }
 }
 
-// Trigger the AI Scan
+async function loadHistory() {
+    try {
+        const res = await fetch('/api/history');
+        const data = await res.json();
+        const tbody = document.getElementById('audit-body');
+        
+        if (data.records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-table">No records yet. Trigger a scan and make a decision.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.records.map(r => {
+            const time = new Date(r.recorded_at).toLocaleTimeString();
+            const decisionClass = r.human_decision === 'approved' ? 'approved' : 'rejected';
+            return `
+                <tr>
+                    <td>#${r.decision_id}</td>
+                    <td>${time}</td>
+                    <td>${r.features.is_root_target === 1 ? 'root' : 'user'}</td>
+                    <td><strong style="color: var(--danger)">${r.score}</strong></td>
+                    <td><span class="decision-badge ${decisionClass}">${r.human_decision.toUpperCase()}</span></td>
+                    <td class="hash-cell" title="${r.hash}">${r.hash}</td>
+                </tr>
+            `;
+        }).join('');
+    } catch (e) { console.error(e); }
+}
+
 async function triggerScan() {
     const btn = document.getElementById('scan-btn');
     const resting = document.getElementById('resting-state');
@@ -34,14 +58,11 @@ async function triggerScan() {
             resting.classList.add('hidden');
             container.classList.remove('hidden');
             
-            // Populate basic data
             document.getElementById('alert-score').innerText = data.score;
             document.getElementById('alert-raw-log').innerText = data.raw_log;
             
-            // Render Visual SHAP Bars
             const shapContainer = document.getElementById('shap-bars');
             shapContainer.innerHTML = data.explanation.map(item => {
-                // Scale magnitude for visual (max out at 100% width)
                 const widthPct = Math.min(item.magnitude * 250, 100);
                 const sign = item.impact > 0 ? '+' : '';
                 return `
@@ -55,7 +76,6 @@ async function triggerScan() {
                 `;
             }).join('');
             
-            // Render Counterfactual
             const cfBox = document.getElementById('counterfactual-box');
             if (data.counterfactual) {
                 cfBox.classList.remove('hidden');
@@ -64,15 +84,12 @@ async function triggerScan() {
                 cfBox.classList.add('hidden');
             }
         }
-    } catch (e) {
-        console.error(e);
-    } finally {
+    } catch (e) { console.error(e); } finally {
         btn.innerText = "▶ Run Scan";
         btn.disabled = false;
     }
 }
 
-// Handle SERVO Approval Gate
 async function makeDecision(decision) {
     try {
         await fetch('/api/decide', {
@@ -81,16 +98,14 @@ async function makeDecision(decision) {
             body: JSON.stringify({ decision: decision })
         });
         
-        // Hide alert, show resting
         document.getElementById('alert-container').classList.add('hidden');
         document.getElementById('resting-state').classList.remove('hidden');
         
-        // Refresh ledger count
         checkLedger();
-    } catch (e) {
-        console.error(e);
-    }
+        loadHistory(); // Refresh the table immediately
+    } catch (e) { console.error(e); }
 }
 
-// Initial check on load
+// Initialize on load
 checkLedger();
+loadHistory();
