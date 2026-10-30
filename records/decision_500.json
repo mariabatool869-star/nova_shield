@@ -1,0 +1,40 @@
+{
+  "decision_id": 500,
+  "alert_type": "ssh_failed_login",
+  "features": {
+    "failed_logins_60s": 50,
+    "is_root_target": 1,
+    "src_ip_unseen": 1,
+    "avg_packet_size": 1000,
+    "duration_seconds": 1.0
+  },
+  "score": 0.5,
+  "explanation": [
+    {
+      "feature": "failed_logins_60s",
+      "impact": 0.292,
+      "direction": "increases_risk",
+      "magnitude": 0.29168610800257044
+    },
+    {
+      "feature": "avg_packet_size",
+      "impact": -0.137,
+      "direction": "decreases_risk",
+      "magnitude": 0.13683812101177492
+    },
+    {
+      "feature": "duration_seconds",
+      "impact": 0.124,
+      "direction": "increases_risk",
+      "magnitude": 0.12402486945412343
+    }
+  ],
+  "action": "monitor_only",
+  "raw_log": "Oct 30 12:01:06 server sshd[1236]: Failed password for root from 10.0.0.99 port 5555 ssh2",
+  "counterfactual": "If failed login attempts were below 5, risk would drop to ~0.45.",
+  "human_decision": "rejected",
+  "unit": "NX-04 VAULT",
+  "recorded_at": "2026-10-30T15:10:23.270203+00:00",
+  "prev_hash": "GENESIS",
+  "hash": "8bf0a7950e750aeb23292a585b3873c8b3a42c967faf3b6d44e0f69a805f9de0"
+}
