@@ -5,7 +5,7 @@
 
 NovaShield is an open-source, AI-powered SOC (Security Operations Center) console. Unlike traditional black-box security tools, NovaShield uses Explainable AI to tell you *exactly* why a threat was flagged, requires human approval before executing a firewall block, and locks every decision in an immutable, cryptographic SQLite ledger.
 
-*(Replace this text with your screenshot: Drag and drop your dashboard image into GitHub to generate a URL, then paste it here like `![NovaShield](URL)`)*
+
 
 ---
 
