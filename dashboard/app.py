@@ -25,7 +25,7 @@ optic = Optic()
 cortex = Cortex()
 vault = Vault()
 servo = Servo()
-siem = SIEMExporter() # Initialize SIEM Exporter
+siem = SIEMExporter()
 
 pending_alert = None
 latest_live_alert = None
@@ -68,7 +68,6 @@ def scan():
     enriched = cortex.explain(alert)
     pending_alert = enriched
     
-    # 🔥 SIEM INTEGRATION: Save and Send Webhook immediately on detection
     siem.save_to_file(enriched)
     siem.send_webhook(enriched)
     
@@ -85,7 +84,6 @@ def live():
         pending_alert = latest_live_alert
         latest_live_alert = None
         
-        # 🔥 SIEM INTEGRATION
         siem.save_to_file(pending_alert)
         siem.send_webhook(pending_alert)
         
@@ -118,28 +116,29 @@ def decide():
         pending_alert["human_decision"] = "rejected"
         
     pending_alert["analyst"] = "mariabatool" 
-    vault.record(pending_alert)
+    vault.record(pending_alert, tenant_id="tenant_001")
     pending_alert = None
     
     return jsonify({"status": "success", "blocked_ip": blocked_ip})
 
 @app.route('/api/verify')
 def verify():
-    is_intact, count, report = vault.verify_chain()
-    anchor_missing = vault.verify_anchor()
-    if anchor_missing:
-        report.extend(anchor_missing)
-        is_intact = False
+    is_intact, count, report = vault.verify_chain(tenant_id="tenant_001")
     return jsonify({"status": "intact" if is_intact else "compromised", "count": count, "report": report})
 
 @app.route('/api/history')
 def history():
-    rows = vault.get_all()
+    rows = vault.get_all(tenant_id="tenant_001")
     records = []
     for r in rows:
         records.append({
-            "decision_id": r[0], "alert_type": r[1], "score": r[2],
-            "human_decision": r[3], "analyst": r[4], "hash": r[5], "recorded_at": r[7]
+            "decision_id": r["id"],
+            "alert_type": r["alert_type"],
+            "score": r["score"],
+            "human_decision": r["human_decision"],
+            "analyst": r["analyst"],
+            "hash": r["hash"],
+            "recorded_at": str(r["recorded_at"])
         })
     return jsonify({"records": records})
 
