@@ -4,3 +4,6 @@ records/
 .env
 anchor.log
 models/datasets/
+models/datasets/
+models/cortex_model.pkl
+models/feature_names.pkl
