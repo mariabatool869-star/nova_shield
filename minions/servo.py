@@ -1,4 +1,3 @@
-import subprocess
 import time
 
 class Servo:
@@ -16,4 +15,4 @@ class Servo:
         
         # For macOS, we simulate it safely:
         print(f"[{self.UNIT_ID} {self.CALLSIGN}] 🛡️  ROUTING TABLE UPDATED. Traffic from {src_ip} is now DROPPED.")
-        time.sleep(1) # Simulate network delay
+        time.sleep(0.5) # Simulate network delay

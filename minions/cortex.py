@@ -14,6 +14,7 @@ class Cortex:
             self.model = pickle.load(f)
         
         self.explainer = shap.Explainer(self.model)
+        # NOTE: The UI model still uses the old feature names for compatibility
         self.feature_names = [
             "failed_logins_60s", "is_root_target", "src_ip_unseen", 
             "avg_packet_size", "duration_seconds"
@@ -22,12 +23,14 @@ class Cortex:
     def explain(self, alert: dict) -> dict:
         features = alert["features"]
         
-        # 1. Get the AI score
+        # Translate the new feature name to the old one for the trained model
+        if "is_privileged_target" in features:
+            features["is_root_target"] = features.pop("is_privileged_target")
+            
         X = pd.DataFrame([features], columns=self.feature_names)
         prob = self.model.predict_proba(X)[0][1]
         alert["score"] = round(prob, 2)
 
-        # 2. Get SHAP explanations
         explanation = self.explainer(X)
         shap_values = explanation.values[0]
         
@@ -37,7 +40,6 @@ class Cortex:
         feature_impacts = list(zip(self.feature_names, shap_values))
         feature_impacts.sort(key=lambda x: abs(x[1]), reverse=True)
 
-        # 3. Build structured explanation for UI
         explanation_items = []
         top_risk_feature = None
         top_risk_value = 0
@@ -55,7 +57,6 @@ class Cortex:
 
         alert["explanation"] = explanation_items
         
-        # 4. Generate counterfactual based on new features
         cf = None
         if top_risk_feature == "src_ip_unseen" and features.get("src_ip_unseen") == 1:
             cf = "If this source IP were in the known baseline, risk would drop significantly."

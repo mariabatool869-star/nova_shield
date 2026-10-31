@@ -6,6 +6,7 @@ import os
 import json
 import glob
 import hashlib
+import re
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -74,17 +75,24 @@ def decide():
     decision = data.get("decision")
     
     if pending_alert:
+        blocked_ip = "unknown"
         if decision == 'approve':
             pending_alert["action"] = "block"
             pending_alert["human_decision"] = "approved"
-            servo.execute_block("10.0.0.99")
+            
+            # Extract real IP from the log
+            match = re.search(r"from (\d+\.\d+\.\d+\.\d+)", pending_alert["raw_log"])
+            if match:
+                blocked_ip = match.group(1)
+                servo.execute_block(blocked_ip)
+                
         else:
             pending_alert["action"] = "monitor_only"
             pending_alert["human_decision"] = "rejected"
             
         vault.record(pending_alert)
         pending_alert = None
-        return jsonify({"status": "success"})
+        return jsonify({"status": "success", "blocked_ip": blocked_ip})
     return jsonify({"status": "error"})
 
 @app.route('/api/verify')
@@ -105,4 +113,4 @@ def history():
 
 if __name__ == '__main__':
     print("Starting NovaShield Dashboard on http://127.0.0.1:5000")
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, threaded=True)
