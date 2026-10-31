@@ -5,12 +5,12 @@ import sys
 import os
 import json
 import glob
-import hashlib
 import re
+from functools import wraps
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, session
 from minions.optic import Optic
 from minions.cortex import Cortex
 from minions.vault import Vault
@@ -18,6 +18,7 @@ from minions.sniffer import Sniffer
 from minions.servo import Servo
 
 app = Flask(__name__)
+app.secret_key = "novashield_session_secret_key"
 
 optic = Optic()
 cortex = Cortex()
@@ -27,12 +28,19 @@ servo = Servo()
 pending_alert = None
 latest_live_alert = None
 
+def require_admin(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("is_admin"):
+            return jsonify({"status": "error", "message": "Unauthorized. Only Admins can block IPs."}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
 def process_live_packet(log_line):
     global latest_live_alert
     alert = optic.scan(log_line, decision_id=1000 + len(glob.glob("records/*.json")))
     if alert:
-        enriched = cortex.explain(alert)
-        latest_live_alert = enriched
+        latest_live_alert = cortex.explain(alert)
 
 sniffer = Sniffer(process_live_packet)
 sniffer.start()
@@ -41,14 +49,26 @@ sniffer.start()
 def index():
     return render_template('index.html')
 
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    if data.get("role") == "admin":
+        session["is_admin"] = True
+        return jsonify({"status": "success", "role": "admin"})
+    else:
+        session["is_admin"] = False
+        return jsonify({"status": "success", "role": "viewer"})
+
 @app.route('/api/scan')
 def scan():
     global pending_alert
     bad_log = "Live TCP: 15 connections from 10.0.0.99 on port 22"
     alert = optic.scan(bad_log, decision_id=500 + len(glob.glob("records/*.json")))
     if not alert: return jsonify({"status": "clean"})
+    
     enriched = cortex.explain(alert)
     pending_alert = enriched
+    
     return jsonify({
         "status": "threat", "score": enriched["score"],
         "explanation": enriched["explanation"], "counterfactual": enriched.get("counterfactual"),
@@ -69,31 +89,37 @@ def live():
     return jsonify({"status": "waiting"})
 
 @app.route('/api/decide', methods=['POST'])
+@require_admin
 def decide():
     global pending_alert
     data = request.json
     decision = data.get("decision")
     
-    if pending_alert:
-        blocked_ip = "unknown"
-        if decision == 'approve':
-            pending_alert["action"] = "block"
-            pending_alert["human_decision"] = "approved"
-            
-            # Extract real IP from the log
-            match = re.search(r"from (\d+\.\d+\.\d+\.\d+)", pending_alert["raw_log"])
-            if match:
-                blocked_ip = match.group(1)
-                servo.execute_block(blocked_ip)
-                
-        else:
-            pending_alert["action"] = "monitor_only"
-            pending_alert["human_decision"] = "rejected"
-            
-        vault.record(pending_alert)
-        pending_alert = None
-        return jsonify({"status": "success", "blocked_ip": blocked_ip})
-    return jsonify({"status": "error"})
+    if not pending_alert:
+        return jsonify({"status": "error", "message": "No pending alert"})
+
+    blocked_ip = "unknown"
+    match = re.search(r"from (\d+\.\d+\.\d+\.\d+)", pending_alert["raw_log"])
+    if match:
+        blocked_ip = match.group(1)
+
+    if decision == 'approve':
+        pending_alert["action"] = "block"
+        pending_alert["human_decision"] = "approved"
+        
+        # 🔥 THIS IS THE REAL BLOCK
+        success = servo.execute_block(blocked_ip)
+        if not success:
+            return jsonify({"status": "error", "message": f"Firewall refused to block {blocked_ip}"})
+    else:
+        pending_alert["action"] = "monitor_only"
+        pending_alert["human_decision"] = "rejected"
+        
+    pending_alert["analyst"] = "mariabatool" 
+    vault.record(pending_alert)
+    pending_alert = None
+    
+    return jsonify({"status": "success", "blocked_ip": blocked_ip})
 
 @app.route('/api/verify')
 def verify():
@@ -107,10 +133,10 @@ def history():
     for r in rows:
         records.append({
             "decision_id": r[0], "alert_type": r[1], "score": r[2],
-            "human_decision": r[4], "hash": r[5], "recorded_at": r[7]
+            "human_decision": r[3], "analyst": r[4], "hash": r[5], "recorded_at": r[7]
         })
     return jsonify({"records": records})
 
 if __name__ == '__main__':
-    print("Starting NovaShield Dashboard on http://127.0.0.1:5000")
+    print("Starting Secure NovaShield Dashboard on http://127.0.0.1:5000")
     app.run(debug=True, port=5000, threaded=True)

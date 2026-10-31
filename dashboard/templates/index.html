@@ -29,6 +29,15 @@
             </div>
             
             <div class="header-right">
+                <!-- ROLE SWITCHER FOR DEMO -->
+                <div style="display:flex; gap:10px; align-items:center; margin-right: 15px;">
+                    <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">ROLE:</span>
+                    <select id="role-selector" onchange="setRole(this.value)" style="background:var(--bg-elevated); color:white; border:1px solid var(--border); padding:6px 10px; border-radius:6px; font-family:var(--font-mono); font-size:12px; cursor:pointer; outline:none;">
+                        <option value="admin">Admin (Full Access)</option>
+                        <option value="viewer">Viewer (Read Only)</option>
+                    </select>
+                </div>
+
                 <div class="vault-chain" id="vault-chain">
                     <span class="chain-badge checking">Checking Ledger...</span>
                 </div>
@@ -94,11 +103,12 @@
                                 <th>Target</th>
                                 <th>AI Score</th>
                                 <th>Human Decision</th>
-                                <th>SHA-256 Hash</th>
+                                <th>Analyst</th>
+                                <th>HMAC Hash</th>
                             </tr>
                         </thead>
                         <tbody id="audit-body">
-                            <tr><td colspan="6" class="empty-table">No records yet. Trigger a scan and make a decision.</td></tr>
+                            <tr><td colspan="7" class="empty-table">No records yet. Trigger a scan and make a decision.</td></tr>
                         </tbody>
                     </table>
                 </div>
