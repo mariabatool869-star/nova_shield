@@ -62,7 +62,9 @@ def login():
 @app.route('/api/scan')
 def scan():
     global pending_alert
-    bad_log = "Live TCP: 15 connections from 10.0.0.99 on port 22"
+    # Simulate a REAL DDoS attack (matches CIC-IDS2017 attack signature)
+    bad_log = "Live TCP: 150 connections from 10.0.0.99 on port 80"
+    
     alert = optic.scan(bad_log, decision_id=500 + len(glob.glob("records/*.json")))
     if not alert: return jsonify({"status": "clean"})
     
@@ -107,7 +109,7 @@ def decide():
         pending_alert["action"] = "block"
         pending_alert["human_decision"] = "approved"
         
-        # 🔥 THIS IS THE REAL BLOCK
+        # Trigger REAL firewall block
         success = servo.execute_block(blocked_ip)
         if not success:
             return jsonify({"status": "error", "message": f"Firewall refused to block {blocked_ip}"})
@@ -123,7 +125,12 @@ def decide():
 
 @app.route('/api/verify')
 def verify():
+    """Verifies the HMAC chain AND the external anchor log."""
     is_intact, count, report = vault.verify_chain()
+    anchor_missing = vault.verify_anchor()
+    if anchor_missing:
+        report.extend(anchor_missing)
+        is_intact = False
     return jsonify({"status": "intact" if is_intact else "compromised", "count": count, "report": report})
 
 @app.route('/api/history')
