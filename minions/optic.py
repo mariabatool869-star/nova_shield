@@ -1,3 +1,4 @@
+
 import re
 
 
@@ -19,19 +20,31 @@ class Optic:
             src_ip = match.group(2)
             port = int(match.group(3))
 
-            target_user = "root"  # Simulating SSH target for the demo
+            # Map port to attack type
+            if port == 80:
+                alert_type = "ddos_on_80"
+            elif port == 22 and connection_count > 40:
+                alert_type = "port_scan_on_22"
+            elif port == 22:
+                alert_type = "brute_force_on_22"
+            elif port == 443:
+                alert_type = "botnet_c2_on_443"
+            else:
+                alert_type = f"anomaly_on_{port}"
+
+            target_user = "root"
             
             features = {
                 "failed_logins_60s": connection_count * 10,
                 "is_privileged_target": 1 if target_user.lower() in self.privileged_users else 0,
                 "src_ip_unseen": 1,
-                "avg_packet_size": 64,  # Small packets (SYN flood)
+                "avg_packet_size": 64,
                 "duration_seconds": 0.5
             }
 
             return {
                 "decision_id": decision_id,
-                "alert_type": f"port_scan_on_{port}",
+                "alert_type": alert_type,
                 "features": features,
                 "score": 0.0,
                 "explanation": [],

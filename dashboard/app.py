@@ -1,3 +1,4 @@
+
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -58,10 +59,16 @@ def login():
     session["is_admin"] = (data.get("role") == "admin")
     return jsonify({"status": "success", "role": data.get("role")})
 
-@app.route('/api/scan')
+@app.route('/api/scan', methods=['GET', 'POST'])
 def scan():
     global pending_alert
-    bad_log = "Live TCP: 150 connections from 10.0.0.99 on port 80"
+    
+    # Accept payload from test script, or use a default
+    if request.method == 'POST' and request.json:
+        bad_log = request.json.get("log_line", "Live TCP: 150 connections from 10.0.0.99 on port 80")
+    else:
+        bad_log = "Live TCP: 150 connections from 10.0.0.99 on port 80"
+    
     alert = optic.scan(bad_log, decision_id=500 + len(glob.glob("records/*.json")))
     if not alert: return jsonify({"status": "clean"})
     

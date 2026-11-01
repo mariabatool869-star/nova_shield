@@ -43,7 +43,7 @@ function renderFeed() {
     feed.innerHTML = currentAlerts.map((a, index) => `
         <div class="feed-item ${selectedAlertId === index ? 'selected' : ''}" onclick="selectAlert(${index})">
             <div class="feed-header">
-                <span class="feed-type">${a.alert_type}</span>
+                <span class="feed-type">${a.alert_type || a.raw_log || 'Unknown Threat'}</span>
                 <span class="feed-score">${a.score}</span>
             </div>
             <div class="feed-time">${new Date().toLocaleTimeString()}</div>
@@ -82,7 +82,7 @@ async function triggerScan() {
     const res = await fetch('/api/scan');
     const data = await res.json();
     if (data.status === 'threat') {
-        data.alert_type = "DDoS / Port Scan"; // Default name for demo
+        // The backend now sends the real alert_type (e.g., ddos_on_80, botnet_c2_on_443)
         addAlertToFeed(data);
         if (selectedAlertId === null) selectAlert(0);
     }
@@ -133,7 +133,6 @@ setInterval(async () => {
     const res = await fetch('/api/live');
     const data = await res.json();
     if (data.status === 'threat') {
-        data.alert_type = "Live Network Anomaly";
         addAlertToFeed(data);
     }
 }, 3000);
