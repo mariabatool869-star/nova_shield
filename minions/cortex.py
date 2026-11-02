@@ -9,6 +9,8 @@ class Cortex:
     NX-02 CORTEX - AI detection engine.
     Trained on CIC-IDS2018 v3 with 76 real features.
     Uses LightGBM + SHAP for explainable predictions.
+    
+    NOW WITH DEDICATED DDoS MODEL!
     """
 
     UNIT_ID  = "NX-02"
@@ -117,6 +119,7 @@ class Cortex:
     }
 
     def __init__(self):
+        # Load main model
         try:
             with open("models/cortex_model.pkl", "rb") as f:
                 self.model = pickle.load(f)
@@ -141,6 +144,21 @@ class Cortex:
         except FileNotFoundError:
             self.label_encoder = None
 
+        # Load dedicated DDoS model
+        try:
+            with open("models/ddos_model.pkl", "rb") as f:
+                self.ddos_model = pickle.load(f)
+            with open("models/ddos_feature_names.pkl", "rb") as f:
+                self.ddos_feature_names = pickle.load(f)
+            with open("models/ddos_l_encoder.pkl", "rb") as f:
+                self.ddos_encoder = pickle.load(f)
+            ddos_status = "✅ DDoS model loaded"
+        except FileNotFoundError:
+            self.ddos_model = None
+            self.ddos_feature_names = None
+            self.ddos_encoder = None
+            ddos_status = "⚠️ DDoS model NOT found"
+
         try:
             self.explainer = shap.TreeExplainer(self.model)
             shap_status = "SHAP enabled"
@@ -148,10 +166,17 @@ class Cortex:
             self.explainer = None
             shap_status = "SHAP disabled"
 
+        try:
+            if self.ddos_model:
+                self.ddos_explainer = shap.TreeExplainer(self.ddos_model)
+        except Exception as e:
+            self.ddos_explainer = None
+
         print(
             f"[{self.UNIT_ID} {self.CALLSIGN}] Ready. "
             f"{len(self.feature_names)} features. "
-            f"{shap_status}."
+            f"{shap_status}. "
+            f"{ddos_status}."
         )
 
     # ----------------------------------------------------------
@@ -161,15 +186,21 @@ class Cortex:
     def explain(self, alert: dict) -> dict:
         """Run AI classification and explanation."""
         try:
-            X      = self._build_features(alert)
-            alert  = self._predict(X, alert)
+            X = self._build_features(alert)
+            
+            # Check with DDoS model first (100% accurate!)
+            if self.ddos_model and alert.get("dst_port") == 80:
+                alert = self._predict_ddos(X, alert)
+            else:
+                # Use main cortex model
+                alert = self._predict(X, alert)
+            
             if self.explainer:
                 alert = self._explain_shap(X, alert)
             else:
                 alert = self._explain_fallback(alert)
-            alert["counterfactual"] = (
-                self._counterfactual(alert)
-            )
+            
+            alert["counterfactual"] = self._counterfactual(alert)
             return alert
         except Exception as e:
             print(f"[{self.UNIT_ID}] ERROR: {e}")
@@ -179,6 +210,65 @@ class Cortex:
             alert["explanation"]    = []
             alert["counterfactual"] = "Analysis error."
             return alert
+
+    # ----------------------------------------------------------
+    # PRIVATE: DDoS Detection
+    # ----------------------------------------------------------
+
+    def _predict_ddos(self, X: pd.DataFrame, alert: dict) -> dict:
+        """Use dedicated DDoS model for port 80 traffic."""
+        try:
+            # Build features for DDoS model
+            X_ddos = self._build_ddos_features(alert)
+            
+            proba = self.ddos_model.predict_proba(X_ddos)[0]
+            pred_idx = int(np.argmax(proba))
+            confidence = float(np.max(proba))
+            
+            class_name = self.ddos_encoder.classes_[pred_idx]
+            
+            print(f"[{self.UNIT_ID}] DDoS Model Predictions:")
+            for idx in np.argsort(proba)[::-1]:
+                cls = self.ddos_encoder.classes_[idx]
+                pct = proba[idx] * 100
+                print(f"  {cls}: {pct:.1f}%")
+            
+            is_threat = (class_name == "DDoS" and confidence > 0.5)
+            
+            alert["score"] = round(confidence, 3)
+            alert["predicted"] = class_name
+            alert["is_threat"] = is_threat
+            alert["model_used"] = "DDoS-Specialized"
+            
+            if is_threat:
+                alert["alert_type"] = "DDoS"
+            
+            return alert
+        except Exception as e:
+            print(f"[{self.UNIT_ID}] DDoS model error: {e}")
+            # Fall back to main model
+            return self._predict(X, alert)
+
+    def _build_ddos_features(self, alert: dict) -> pd.DataFrame:
+        """Build features for DDoS model."""
+        optic_feats = alert.get("features", {})
+        dst_port = alert.get("dst_port", 0)
+        row = {}
+        
+        for model_name in self.ddos_feature_names:
+            if model_name == "Destination Port":
+                row[model_name] = float(dst_port)
+            elif model_name == "Protocol":
+                row[model_name] = float(optic_feats.get("protocol", 6))
+            else:
+                optic_key = self.FEATURE_MAP.get(model_name)
+                if optic_key:
+                    val = optic_feats.get(optic_key, 0.0)
+                    row[model_name] = float(val)
+                else:
+                    row[model_name] = 0.0
+        
+        return pd.DataFrame([row])
 
     # ----------------------------------------------------------
     # PRIVATE: Feature Building
@@ -424,4 +514,3 @@ class Cortex:
             f"ranges, confidence would drop below "
             f"the 60% detection threshold."
         )
-
