@@ -1,15 +1,15 @@
 let currentAlerts = [];
 let selectedAlertId = null;
 
-// --- ROLE MANAGEMENT ---
-async function setRole(role) {
-    await fetch('/api/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: role })
+// --- SOCKET.IO CONNECTION (Optional) ---
+try {
+    const socket = io();
+    socket.on('new_alert', (alert) => {
+        console.log("📡 Socket received alert:", alert);
+        addAlertToFeed(alert);
     });
-    if (role === 'viewer') {
-        document.querySelectorAll('.btn-approve, .btn-reject').forEach(b => b.disabled = true);
-    }
+} catch (e) {
+    console.log("Socket.IO not available. Falling back to polling.");
 }
 
 // --- SYSTEM STATUS ---
@@ -24,13 +24,18 @@ async function updateStatus() {
             vaultBadge.innerHTML = `<span class="dot red"></span> Ledger: TAMPERED`;
         }
         document.getElementById('db-status').innerHTML = `<span class="dot green"></span> PostgreSQL: Online`;
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error("Status error:", e);
+        document.getElementById('db-status').innerHTML = `<span class="dot red"></span> PostgreSQL: Offline`;
+    }
 }
 
 // --- ALERT FEED ---
 function addAlertToFeed(alert) {
-    currentAlerts.unshift(alert);
+    currentAlerts = [alert]; 
+    selectedAlertId = 0; 
     renderFeed();
+    renderDetails(alert);
 }
 
 function renderFeed() {
@@ -43,7 +48,7 @@ function renderFeed() {
     feed.innerHTML = currentAlerts.map((a, index) => `
         <div class="feed-item ${selectedAlertId === index ? 'selected' : ''}" onclick="selectAlert(${index})">
             <div class="feed-header">
-                <span class="feed-type">${a.alert_type || a.raw_log || 'Unknown Threat'}</span>
+                <span class="feed-type">${a.raw_log || a.alert_type || 'Unknown Threat'}</span>
                 <span class="feed-score">${a.score}</span>
             </div>
             <div class="feed-time">${new Date().toLocaleTimeString()}</div>
@@ -79,12 +84,11 @@ function renderDetails(alert) {
 
 // --- ACTIONS ---
 async function triggerScan() {
-    const res = await fetch('/api/scan');
+    const attackType = document.getElementById('attack-selector')?.value || 'ddos';
+    const res = await fetch(`/api/scan?type=${attackType}`);
     const data = await res.json();
     if (data.status === 'threat') {
-        // The backend now sends the real alert_type (e.g., ddos_on_80, botnet_c2_on_443)
         addAlertToFeed(data);
-        if (selectedAlertId === null) selectAlert(0);
     }
 }
 
@@ -108,27 +112,38 @@ async function makeDecision(decision) {
 
 // --- AUDIT HISTORY ---
 async function loadHistory() {
-    const res = await fetch('/api/history');
-    const data = await res.json();
-    const tbody = document.getElementById('audit-body');
-    if (data.records.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="empty-table">No records.</td></tr>`;
-        return;
+    try {
+        const res = await fetch('/api/history');
+        const data = await res.json();
+        const tbody = document.getElementById('audit-body');
+        if (data.records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="empty-table">No records.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = data.records.map(r => `
+            <tr>
+                <td>#${r.decision_id}</td>
+                <td>${new Date(r.recorded_at).toLocaleTimeString()}</td>
+                <td>${r.alert_type}</td>
+                <td style="color: var(--danger)">${r.score}</td>
+                <td>${r.human_decision.toUpperCase()}</td>
+                <td>${r.analyst}</td>
+                <td class="hash-cell">${r.hash}</td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error("History error:", e);
     }
-    tbody.innerHTML = data.records.map(r => `
-        <tr>
-            <td>#${r.decision_id}</td>
-            <td>${new Date(r.recorded_at).toLocaleTimeString()}</td>
-            <td>${r.alert_type}</td>
-            <td style="color: var(--danger)">${r.score}</td>
-            <td>${r.human_decision.toUpperCase()}</td>
-            <td>${r.analyst}</td>
-            <td class="hash-cell">${r.hash}</td>
-        </tr>
-    `).join('');
 }
 
 // --- INITIALIZATION ---
+currentAlerts = [];
+selectedAlertId = null;
+renderFeed();
+updateStatus();
+loadHistory();
+
+// Poll for live alerts (as a fallback)
 setInterval(async () => {
     const res = await fetch('/api/live');
     const data = await res.json();
@@ -136,6 +151,3 @@ setInterval(async () => {
         addAlertToFeed(data);
     }
 }, 3000);
-
-updateStatus();
-loadHistory();

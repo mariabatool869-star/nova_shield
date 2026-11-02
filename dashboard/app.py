@@ -1,4 +1,3 @@
-
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -12,15 +11,16 @@ from functools import wraps
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from flask import Flask, render_template, jsonify, request, session
+from flask_socketio import SocketIO, emit
 from minions.optic import Optic
 from minions.cortex import Cortex
 from minions.vault import Vault
-from minions.sniffer import Sniffer
 from minions.servo import Servo
 from minions.siem import SIEMExporter
 
 app = Flask(__name__)
 app.secret_key = "novashield_session_secret_key"
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 optic = Optic()
 cortex = Cortex()
@@ -29,7 +29,6 @@ servo = Servo()
 siem = SIEMExporter()
 
 pending_alert = None
-latest_live_alert = None
 
 def require_admin(f):
     @wraps(f)
@@ -38,16 +37,6 @@ def require_admin(f):
             return jsonify({"status": "error", "message": "Unauthorized."}), 403
         return f(*args, **kwargs)
     return decorated_function
-
-def process_live_packet(log_line):
-    global latest_live_alert
-    alert = optic.scan(log_line, decision_id=1000 + len(glob.glob("records/*.json")))
-    if alert:
-        enriched = cortex.explain(alert)
-        latest_live_alert = enriched
-
-sniffer = Sniffer(process_live_packet)
-sniffer.start()
 
 @app.route('/')
 def index():
@@ -63,11 +52,22 @@ def login():
 def scan():
     global pending_alert
     
-    # Accept payload from test script, or use a default
+    attack_type = request.args.get("type")
     if request.method == 'POST' and request.json:
-        bad_log = request.json.get("log_line", "Live TCP: 150 connections from 10.0.0.99 on port 80")
+        attack_type = request.json.get("type", attack_type)
+    
+    if attack_type == "ddos":
+        bad_log = "Live TCP: 150 connections from 10.0.0.99 on port 80"
+    elif attack_type == "portscan":
+        bad_log = "Live TCP: 50 connections from 10.0.0.100 on port 22"
+    elif attack_type == "bruteforce":
+        bad_log = "Live TCP: 30 connections from 10.0.0.101 on port 22"
+    elif attack_type == "botnet":
+        bad_log = "Live TCP: 10 connections from 10.0.0.102 on port 443"
     else:
         bad_log = "Live TCP: 150 connections from 10.0.0.99 on port 80"
+    
+    print(f"🔍 SCAN RECEIVED: {bad_log}")
     
     alert = optic.scan(bad_log, decision_id=500 + len(glob.glob("records/*.json")))
     if not alert: return jsonify({"status": "clean"})
@@ -78,28 +78,14 @@ def scan():
     siem.save_to_file(enriched)
     siem.send_webhook(enriched)
     
+    # 🔥 SEND THE ALERT TO THE FRONTEND VIA WEBSOCKETS
+    socketio.emit('new_alert', enriched)
+    
     return jsonify({
         "status": "threat", "score": enriched["score"],
         "explanation": enriched["explanation"], "counterfactual": enriched.get("counterfactual"),
         "raw_log": enriched["raw_log"]
     })
-
-@app.route('/api/live')
-def live():
-    global latest_live_alert, pending_alert
-    if latest_live_alert:
-        pending_alert = latest_live_alert
-        latest_live_alert = None
-        
-        siem.save_to_file(pending_alert)
-        siem.send_webhook(pending_alert)
-        
-        return jsonify({
-            "status": "threat", "score": pending_alert["score"],
-            "explanation": pending_alert["explanation"], "counterfactual": pending_alert.get("counterfactual"),
-            "raw_log": pending_alert["raw_log"]
-        })
-    return jsonify({"status": "waiting"})
 
 @app.route('/api/decide', methods=['POST'])
 @require_admin
@@ -150,5 +136,5 @@ def history():
     return jsonify({"records": records})
 
 if __name__ == '__main__':
-    print("Starting Secure NovaShield Dashboard on http://127.0.0.1:5000")
-    app.run(debug=True, port=5000, threaded=True)
+    print("Starting NovaShield Dashboard on http://127.0.0.1:5000")
+    socketio.run(app, host='127.0.0.1', port=5000, allow_unsafe_werkzeug=True)
