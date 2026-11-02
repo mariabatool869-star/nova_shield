@@ -1,5 +1,0 @@
-Oct 30 12:01:01 server sshd[1234]: Accepted password for admin from 192.168.1.10 port 2222 ssh2
-Oct 30 12:01:05 server sshd[1235]: Failed password for root from 10.0.0.99 port 5555 ssh2
-Oct 30 12:01:06 server sshd[1236]: Failed password for root from 10.0.0.99 port 5555 ssh2
-Oct 30 12:01:08 server sshd[1237]: Failed password for root from 10.0.0.99 port 5555 ssh2
-Oct 30 12:01:10 server sshd[1238]: Accepted password for admin from 192.168.1.10 port 2224 ssh2
