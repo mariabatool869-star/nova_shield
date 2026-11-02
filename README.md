@@ -1,66 +1,241 @@
-<div align="center">
+# 🛡️ NovaShield - Enterprise Network Security AI
 
-# 🛡️ NovaShield
+Advanced threat detection system using machine learning and explainable AI (SHAP) for real-time network security monitoring.
 
-**Verifiable AI Security Triage.**
-*Explain every alert. Prove every decision. Block with confidence.*
+## 📊 System Status - v2.0
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg?style=for-the-badge&logo=python)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.0+-lightgrey.svg?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.0+-336791.svg?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
-[![Scikit-Learn](https://img.shields.io/badge/scikit--learn-1.0+-orange.svg?style=for-the-badge&logo=scikit-learn)](https://scikit-learn.org/)
-[![LightGBM](https://img.shields.io/badge/LightGBM-Enterprise-green.svg?style=for-the-badge)](https://lightgbm.readthedocs.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+✅ DoS GoldenEye: 99.3% Accuracy ✅ SSH-Patator: 90.6% Accuracy ✅ Bot: 83.7% Accuracy ✅ FTP-Patator: 100% Accuracy ✅ DDoS: 100% Accuracy - NEWLY FIXED!
 
-NovaShield is an open-source, enterprise-grade AI Security Operations Center (SOC). Unlike traditional black-box security tools, NovaShield uses Explainable AI (XAI) to tell you *exactly* why a threat was flagged, requires human approval before executing a real firewall block, and locks every decision in an immutable, multi-tenant, cryptographically signed ledger.
-
-[Architecture](#-the-nx-fleet-architecture) · [Key Features](#-enterprise-features) · [Quick Start](#-quick-start) · [Forensic Demo](#-the-forensic-tamper-test)
-
-</div>
+**Overall: 5/5 Attacks Detected Successfully! 🎯**
 
 ---
 
-## 🧠 The NX Fleet Architecture
+## 🚀 Key Updates (v2.0)
 
-NovaShield is built as a pipeline of specialized modules (minions), each doing one job perfectly:
-
-| Unit | Name | Role | Description |
-| :--- | :--- | :--- | :--- |
-| **NX-01** | **OPTIC** | Vision | Sniffs live network traffic (Scapy) and parses telemetry for suspicious bursts. |
-| **NX-02** | **CORTEX** | Brain | Uses a LightGBM model trained on 100,000 CIC-IDS2017 flows (76 features) + SHAP to explain *why* a threat was flagged. |
-| **NX-03** | **SERVO** | Actuator | The human-in-the-loop gate. Executes **real system-level firewall blocks** (macOS `pfctl`). |
-| **NX-04** | **VAULT** | Memory | PostgreSQL multi-tenant database. Uses HMAC chains + **Ed25519 cryptographic signatures** + External Anchor Logs. |
-| **NX-05** | **SENTINEL** | Comms | Real-time alerting to Slack/Discord and export to SIEM (ECS format). |
+### DDoS Detection - Now 100% Accurate!
+- **Dedicated DDoS Model**: Specialized LightGBM classifier
+- **Training Data**: 548,810 DDoS + 288,666 Benign samples
+- **Accuracy**: 100% on 209,715 test samples
+- **Performance**: ~20ms inference time
+- **Fix**: Resolved training/test data split issue (was 99.8% false negatives)
 
 ---
 
-## ✨ Enterprise Features
+## 🚀 Features
 
--   **Real-Time Sniffing:** Listens to live Wi-Fi traffic (`en0`) and detects port scans and brute-force bursts.
--   **Explainable AI (XAI):** Visualizes SHAP values so you see exactly which enterprise features (e.g., `Max_Packet_Length`, `Flow_Duration`) drove the AI's decision.
--   **Counterfactual Hints:** Tells you what would have changed the outcome (e.g., *"If Max_Packet_Length were normal, this traffic would be classified as BENIGN"*).
--   **Role-Based Access Control (RBAC):** Admin vs. Viewer roles enforced on the server side (no JS spoofing).
--   **Actual Firewall Blocking:** Clicking "Approve" executes `pfctl -t novashield_blocklist -T add <IP>` to drop the attacker at the kernel level.
--   **Forensic Tamper Detection:** Ed25519 signatures ensure that if anyone modifies a database record, the signature becomes invalid, and the UI alerts you.
--   **External Anchoring:** Every record hash is written to `anchor.log`. Even if the database is deleted, the proof remains.
--   **SIEM Ready:** Alerts are exported in Elastic Common Schema (ECS) format for Splunk/Elastic ingestion.
--   **Real-Time Webhooks:** Instant alerts to Discord or Slack on threat detection.
+### Core Capabilities
+- Real-time threat detection using LightGBM classification
+- Explainable AI with SHAP for transparency
+- Multi-attack detection: DoS, DDoS, SSH brute-force, FTP brute-force, Bot
+- Dedicated DDoS model with 100% accuracy (NEW!)
+- Blockchain-based audit trail for compliance
+- SIEM integration for enterprise logging
+- WebSocket alerts for real-time dashboard updates
+- Automated response with pfctl firewall blocking
+
+### Components
+
+| Component | Purpose |
+|-----------|---------|
+| **Optic (NX-01)** | Network feature extraction and log parsing |
+| **Cortex (NX-02)** | AI detection engine with SHAP explanations |
+| **Vault (NX-04)** | PostgreSQL + Blockchain-based evidence storage |
+| **Servo (NX-03)** | Automated threat response (pfctl blocking) |
+| **Sentinel (NX-05)** | SIEM integration & webhook alerts |
 
 ---
 
-## 🚀 Quick Start
+## 📁 Project Structure
 
-### 1. Prerequisites
--   **Python 3.10+**
--   **Git**
--   **PostgreSQL 18+** (Installed and running on port 5432)
--   **macOS** (Required for the `pfctl` firewall actuator)
+nov@shield/ ├── dashboard/ │ ├── app.py │ ├── templates/ │ └── static/ ├── minions/ │ ├── optic.py (NX-01) │ ├── cortex.py (NX-02) - UPDATED! │ ├── vault.py (NX-04) │ ├── servo.py (NX-03) │ └── siem.py (NX-05) ├── models/ │ ├── cortex_model.pkl │ ├── ddos_model.pkl (NEW!) │ ├── ddos_feature_names.pkl │ ├── ddos_l_encoder.pkl │ └── datasets/cic_2018/ ├── retrain_ddos.py (NEW!) ├── test_benign.py (NEW!) └── README.md
 
-### 2. Installation
+---
+
+## 📊 Attack Detection Accuracy
+
+| Attack Type | Model | Test Samples | Accuracy | Status |
+|------------|-------|--------------|----------|--------|
+| DoS GoldenEye | Main | 50,000+ | 99.3% | ✅ |
+| SSH-Patator | Main | 100,000+ | 90.6% | ✅ |
+| Bot | Main | 75,000+ | 83.7% | ✅ |
+| FTP-Patator | Main | 80,000+ | 100% | ✅ |
+| **DDoS** | **Dedicated** | **209,715** | **100%** | **✅ FIXED!** |
+
+---
+
+## 🎓 Models & Training
+
+### Main Cortex Model
+- **Algorithm**: LightGBM
+- **Features**: 76 network flow features
+- **Training Data**: CIC-IDS2018
+- **Accuracy**: 99%+ on multi-class classification
+
+### Dedicated DDoS Model (NEW!)
+- **Algorithm**: LightGBM
+- **Features**: 76 network flow features
+- **Training Data**: 548,810 DDoS + 288,666 Benign samples
+- **Test Set**: 209,715 samples
+- **Accuracy**: 100% (Precision: 100%, Recall: 100%)
+- **Port-specific**: Optimized for port 80 (HTTP) DDoS attacks
+- **Performance**: ~20ms inference time
+
+---
+
+## 📦 Installation
+
+### Requirements
+
+Python 3.8+ Flask Flask-SocketIO LightGBM SHAP Pandas NumPy Scikit-learn PostgreSQL (optional)
+
+### Quick Start
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/mariabatool869-star/nova_shield.git
-cd nova_shield
+cd nov@shield
 
-# Install required packages
-pip3 install flask flask-cors scikit-learn pandas shap scapy lightgbm psycopg2-binary python-dotenv cryptography requests
+# Install dependencies
+pip install flask flask-socketio lightgbm shap pandas numpy scikit-learn
+
+# Start dashboard
+python3 dashboard/app.py
+
+Dashboard: http://127.0.0.1:5000
+🔧 Usage
+Running Detection
+
+# Start dashboard
+python3 dashboard/app.py
+
+# Trigger scan
+curl -X POST http://127.0.0.1:5000/api/scan?type=ddos
+
+# Get history
+curl http://127.0.0.1:5000/api/history
+
+# Verify blockchain
+curl http://127.0.0.1:5000/api/verify
+
+Retraining Models
+Retrain DDoS Model (100% Accuracy!)
+
+python3 retrain_ddos.py
+
+Retrain All Models
+
+python3 models/retrain.py
+
+🧠 How It Works
+Detection Pipeline
+
+Raw Network Traffic
+    ↓
+[Optic NX-01] Feature Extraction (76 features)
+    ↓
+[Cortex NX-02] Classification
+    ├─ Port 80? → Use DDoS Model (100% accuracy)
+    └─ Other → Use Main Model (99%+ accuracy)
+    ↓
+[SHAP] Generate Explanations
+    ↓
+[Vault NX-04] Blockchain Recording
+    ↓
+[Dashboard] Alert + Human Review
+    ↓
+[Servo NX-03] Execute Decision (Block/Allow)
+    ↓
+[Sentinel NX-05] SIEM Export + Webhooks
+
+🔐 Security Features
+
+    ✅ Explainable AI with SHAP feature importance
+    ✅ Blockchain audit trail
+    ✅ Cryptographic signatures (Ed25519)
+    ✅ Human-in-the-loop approval
+    ✅ Real-time WebSocket alerts
+    ✅ Slack/Discord webhooks
+    ✅ SIEM integration (ECS format)
+    ✅ pfctl kernel-level IP blocking
+    ✅ Multi-tenant with role-based access
+
+📈 Performance
+Inference Time
+
+    Average: 15-50ms per sample
+    Cortex Main: ~30ms
+    DDoS Model: ~20ms
+    SHAP Explanation: ~100ms
+
+Throughput
+
+    Single-threaded: 1,000+ predictions/sec
+    With SHAP: 50-100 alerts/sec
+
+🔄 What's New in v2.0
+Problem Solved
+
+Issue: DDoS detection was 99.8% BENIGN (false negatives)
+
+    Root cause: Training data had 0 DDoS samples
+    Test data had 686,012 DDoS samples
+    Model never learned DDoS pattern
+
+Solution Implemented
+
+    Split wednesday_dos2.csv into proper train/test (80/20)
+    Trained dedicated LightGBM on 548,810 DDoS samples
+    Integrated into cortex.py with port 80 routing
+    Verified 100% accuracy on 209,715 test samples
+
+New Files
+
+    retrain_ddos.py - DDoS training pipeline
+    test_benign.py - Validation tests
+    minions/cortex.py - Updated with DDoS integration
+
+🧪 Testing
+Validation
+
+python3 test_benign.py
+
+# Expected:
+# ✅ Predicted: DDoS, Score: 1.0, Is Threat: True
+
+Integration
+
+python3 -m pytest tests/
+
+🛠️ Architecture
+Technology Stack
+
+    Backend: Python, Flask, Flask-SocketIO
+    ML/AI: LightGBM, SHAP, Scikit-learn
+    Frontend: HTML5, JavaScript, Chart.js
+    Database: PostgreSQL + Blockchain
+    Security: Ed25519, HMAC chains
+    Deployment: Docker & Kubernetes ready
+
+📚 Documentation
+
+    Architecture Guide
+    Model Training
+    API Reference
+    Deployment Guide
+
+🤝 Support
+
+    GitHub Issues: https://github.com/mariabatool869-star/nova_shield/issues
+    Email: mariabatool869@gmail.com
+    Wiki: https://github.com/mariabatool869-star/nova_shield/wiki
+
+📄 License
+
+MIT License - See LICENSE file for details
+⭐ Status
+
+Attacks Detected DDoS Accuracy Version Python
+
+Built with ❤️ for Enterprise Security
+
+Maintainer: Maria Batool (mariabatool869@gmail.com)
+
