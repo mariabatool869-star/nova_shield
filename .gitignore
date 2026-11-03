@@ -1,11 +1,28 @@
+# Python
 __pycache__/
-*.pyc
-records/
-.env
-anchor.log
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+
+# Models (too large - don't push)
 models/datasets/
-models/datasets/
-models/cortex_model.pkl
-models/feature_names.pkl
 models/*.pkl
-models/*.json
+models/*.h5
+models/*.joblib
+
+# Cache and logs
+.DS_Store
+*.log
+anchor.log
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Data files (optional - comment out if you want to include)
+# *.csv
