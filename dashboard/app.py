@@ -52,20 +52,11 @@ def login():
 def scan():
     global pending_alert
     
-    attack_type = request.args.get("type")
-    if request.method == 'POST' and request.json:
-        attack_type = request.json.get("type", attack_type)
+    # 🔥 FIX: Accept the log_line from the POST body
+    bad_log = "Live TCP: 150 connections from 10.0.0.99 on port 80"
     
-    if attack_type == "ddos":
-        bad_log = "Live TCP: 150 connections from 10.0.0.99 on port 80"
-    elif attack_type == "portscan":
-        bad_log = "Live TCP: 50 connections from 10.0.0.100 on port 22"
-    elif attack_type == "bruteforce":
-        bad_log = "Live TCP: 30 connections from 10.0.0.101 on port 22"
-    elif attack_type == "botnet":
-        bad_log = "Live TCP: 10 connections from 10.0.0.102 on port 443"
-    else:
-        bad_log = "Live TCP: 150 connections from 10.0.0.99 on port 80"
+    if request.method == 'POST' and request.json:
+        bad_log = request.json.get("log_line", bad_log)
     
     print(f"🔍 SCAN RECEIVED: {bad_log}")
     
@@ -78,14 +69,19 @@ def scan():
     siem.save_to_file(enriched)
     siem.send_webhook(enriched)
     
-    # 🔥 SEND THE ALERT TO THE FRONTEND VIA WEBSOCKETS
     socketio.emit('new_alert', enriched)
     
     return jsonify({
         "status": "threat", "score": enriched["score"],
+        "alert_type": enriched.get("alert_type"),
         "explanation": enriched["explanation"], "counterfactual": enriched.get("counterfactual"),
         "raw_log": enriched["raw_log"]
     })
+
+# 🔥 FIX: Add the missing /api/live route
+@app.route('/api/live')
+def live():
+    return jsonify({"status": "waiting"})
 
 @app.route('/api/decide', methods=['POST'])
 @require_admin

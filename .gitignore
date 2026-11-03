@@ -26,3 +26,5 @@ anchor.log
 
 # Data files (optional - comment out if you want to include)
 # *.csv
+__pycache__/
+*.pyc
