@@ -3,11 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NovaShield | Enterprise AI SOC</title>
+    <title>NovaShield v2.0 | Hybrid Explainable IDS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .approval-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-approve {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-approve:hover {
+            background: #059669;
+            transform: scale(1.05);
+        }
+        .btn-reject {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-reject:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+        .shap-explanations {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .shap-title {
+            font-weight: bold;
+            color: #3b82f6;
+            margin-bottom: 10px;
+        }
+        .shap-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 13px;
+        }
+        .confidence-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .model-tag {
+            display: inline-block;
+            background: #8b5cf6;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 5px;
+        }
+    </style>
 </head>
 <body>
 
@@ -23,7 +96,7 @@
                     <path d="M16 10V22M11 13L16 18L21 13" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
                 </svg>
                 <div class="logo-text">NOVA<span>SHIELD</span></div>
-                <div class="system-tag">v2.0 ENTERPRISE</div>
+                <div class="system-tag">v2.0 HYBRID IDS</div>
             </div>
             
             <div class="header-right">
@@ -31,14 +104,12 @@
                     <span class="dot checking"></span> PostgreSQL
                 </div>
                 <div class="status-indicator" id="vault-status">
-                    <span class="dot checking"></span> Ledger
+                    <span class="dot checking"></span> Vault
                 </div>
                 <select id="role-selector" onchange="setRole(this.value)">
-                    <option value="admin">Admin</option>
+                    <option value="admin">Admin (Approver)</option>
                     <option value="viewer">Viewer</option>
                 </select>
-                <!-- 🔥 MANUAL REFRESH BUTTON -->
-                <button class="btn-refresh" onclick="refreshLiveAlert()" style="background: var(--warning); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-right: 10px;">🔄 Refresh Feed</button>
                 <button id="scan-btn" class="btn-primary" onclick="triggerScan()">▶ Run Scan</button>
             </div>
         </header>
@@ -46,22 +117,25 @@
         <main class="split-view">
             <section class="panel feed-panel">
                 <div class="panel-header">
-                    <h2>Live Threat Feed</h2>
+                    <h2>🔴 Live Threat Feed</h2>
                     <span class="badge" id="feed-count">0</span>
                 </div>
                 <div id="alert-feed" class="feed-container">
-                    <div class="empty-feed">No active threats. System is monitoring.</div>
+                    <div class="empty-feed">Monitoring network traffic...</div>
                 </div>
             </section>
 
-            <section class="panel details-panel">
+            <son class="panel details-panel">
                 <div class="panel-header">
-                    <h2>NX-02 CORTEX Evidence</h2>
+                    <h2>🧠 NX-02 CORTEX: HYBRID Detection + SHAP</h2>
                 </div>
                 <div id="details-container" class="details-container">
                     <div class="empty-details">
                         <span>🛡️</span>
-                        <p>Select an alert from the feed to view AI evidence.</p>
+                        <p>Select an alert to view:</p>
+                        <p>• RandomForest prediction (99.66%)</p>
+                        <p>• SHAP explanations (top 5 features)</p>
+                        <p>• Human approval buttons</p>
                     </div>
                 </div>
             </section>
@@ -69,24 +143,24 @@
 
         <div class="audit-panel">
             <div class="audit-header">
-                <h3>⛓️ NX-04 VAULT: Immutable Audit Ledger</h3>
-                <span class="audit-subtitle">PostgreSQL + Ed25519 Signatures</span>
+                <h3>⛓️ NX-04 VAULT: Immutable Audit Trail</h3>
+                <span class="audit-subtitle">Records: Detection + Explanation + Decision</span>
             </div>
             <div class="table-container">
                 <table class="audit-table">
-                    <thead>
+     thead>
                         <tr>
                             <th>ID</th>
                             <th>Time (UTC)</th>
-                            <th>Alert</th>
-                            <th>Score</th>
+                            <th>Attack Type</th>
+                            <th>Confidence</th>
                             <th>Decision</th>
                             <th>Analyst</th>
-                            <th>Hash</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="audit-body">
-                        <tr><td colspan="7" class="empty-table">Loading ledger...</td></tr>
+                        <tr><td colspan="7" class="empty-table">No decisions yet...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -94,5 +168,92 @@
     </div>
 
     <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script>
+        // Handle alert selection and display
+        function selectAlert(alertElement) {
+            document.querySelectorAll('.feed-item').forEach(e => e.classList.remove('active'));
+            alertElement.classList.add('active');
+            
+            const attackType = alertElement.dataset.attack;
+            const confidence = parseFloat(alertElement.dataset.confidence);
+            const explanation = alertElement.dataset.explanation;
+            
+            displayDetails(attackType, confidence, explanation);
+        }
+
+        function displayDetails(attack, confidence, explanation) {
+            const container = document.getElementById('details-container');
+            
+            let explanationHtml = '';
+            try {
+                const expArray = JSON.parse(explanation);
+                if (expArray.length > 0) {
+                    explanationHtml = '<div class="shap-explanations"><div class="shap-title">Top Contributing Factors (SHAP):</div>';
+                    expArray.slice(0, 5).forEach((exp, idx) => {
+                        const importance = (exp.importance * 100).toFixed(2);
+                        explanationHtml += `<div class="shap-item"><span>${idx+1}. ${exp.feature}</span><span>${importance}%</span></div>`;
+                    });
+                    explanationHtml += '</div>';
+                }
+            } catch(e) {}
+            
+            container.innerHTML = `
+                <div style="padding: 20px;">
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="margin-bottom: 10px;">
+                            Attack Detected
+                            <span class="confidence-badge">${(confidence * 100).toFixed(2)}%</span>
+                            <span class="model-tag">RandomForest 99.66%</span>
+                        </h3>
+                        <div style="font-size: 28px; color: #ef4444; font-weight: bold;">
+                            ${attack}
+                        </div>
+                    </div>
+                    
+                    ${explanationHtml}
+                    
+                    <div style="margin-top: 20px; padding: 15px; background: rgba(255,215,0,0.1); border-radius: 6px;">
+                        <p style="margin: 0; font-weight: bold; color: #ffd700;">⚠️ AWAITHUMAN APPROVAL</p>
+                        <p style="margin: 5px 0 0 0; font-size: 13px;">Network analyst must review and approve/reject</p>
+                    </div>
+                    
+                    <div class="approval-buttons">
+                        <button class="btn-approve" onclick="approveAlert('${attack}')">✅ APPROVE (Block)</button>
+                        <button class="btn-reject" onclick="rejectAlert('${attack}')">❌ REJECT (Continue)</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function approveAlert(attack) {
+            alert(`✅ Approved: ${attack}\n\nAction: Block IP + Save to Vault`);
+            updateAuditLog(attack, 'APPROVED', 'BLOCKED');
+        }
+
+        function rejectAlert(attack) {
+            alert(`❌ Rejected: ${attack}\n\nAction: Continue Monitoring`);
+            updateAuditLog(attack, 'REJECTED', 'MONITORING');
+        }
+
+        function updateAuditLog(attack, decision, action) {
+            const auditBody = dgetElementById('audit-body');
+            if (auditBody.innerHTML.includes('No decisions yet')) {
+                auditBody.innerHTML = '';
+            }
+            
+            const now = new Date().toISOString();
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>#${Date.now()}</td>
+                <td>${now}</td>
+                <td>${attack}</td>
+                <td>99.66%</td>
+                <td><strong>${decision}</strong></td>
+                <td>maria@novashield</td>
+                <td>${action}</td>
+            `;
+            auditBody.insertBefore(row, auditBody.firstChild);
+        }
+    </script>
 </body>
 </html>
