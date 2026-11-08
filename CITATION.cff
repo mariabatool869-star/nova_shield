@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use NovaShield in your research, please cite this software."
+type: software
+
+title: "NovaShield: Explainable AI Cybersecurity Research Prototype"
+
+authors:
+  - family-names: "Batool"
+    given-names: "Maria"
+    orcid: "https://orcid.org/0009-0001-1971-3508"
+
+abstract: >-
+  NovaShield is a cybersecurity research prototype exploring explainable
+  machine learning for network intrusion detection, network-flow feature
+  engineering, SHAP-based model interpretation, and human-centred security
+  operations. Its initial research release includes controlled numerical
+  feature validation, offline machine-learning experiments, bounded network
+  observation, and an experimental Security Operations Console.
+
+version: "0.1.0"
+date-released: "2026-11-08"
+
+doi: "10.5281/zenodo.24056070"
+repository-code: "https://github.com/mariabatool869-star/nova_shield"
+url: "https://doi.org/10.5281/zenodo.24056070"
+
+keywords:
+  - cybersecurity
+  - network intrusion detection
+  - explainable artificial intelligence
+  - machine learning
+  - network-flow feature engineering
+  - SHAP
+  - security operations
+  - research software
