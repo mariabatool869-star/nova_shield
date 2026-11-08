@@ -28,3 +28,68 @@ anchor.log
 # *.csv
 __pycache__/
 *.pyc
+
+
+# NOVASHIELD PUBLIC REPOSITORY SAFETY
+
+# Local development backups
+*.bak
+*.bak.*
+*.before_*
+*.broken_*
+*.sec[0-9]*
+
+# Private runtime data
+records/telemetry/
+*.sqlite
+*.sqlite3
+*.db
+
+# Captures and research datasets (review before publishing)
+*.pcap
+*.pcapng
+*.csv
+*.parquet
+
+# Generated machine-learning model binaries
+*.joblib
+*.pkl
+*.pickle
+*.h5
+
+# Credentials and private keys
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local environments and editor data
+.venv/
+.cursor/
+
+
+# NOVASHIELD RESEARCH PUBLICATION EXCLUSIONS
+
+# Historical development snapshots
+research_fixtures/lifecycle_backups/
+phase6_xai/*before*
+phase6_xai/original_*
+phase6_xai/dashboard_phase6_candidate*
+phase6_xai/app_js_before_*
+
+# Local reference implementation - licensing review required
+research_references/CICFlowMeter/
+
+# Extra historical environment backups and secret-like files
+env.*
+*.env
+*.env.*
+*.secret
+*.secrets
+
+# Runtime outputs and temporary files
+records/telemetry/
+*.tmp
+*.temp
