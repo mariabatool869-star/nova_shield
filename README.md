@@ -1,3 +1,36 @@
+## Research Publications & Technical Reports
+
+### Validation of Network-Flow Feature Engineering for Explainable Intrusion Detection
+
+**Author:** Maria Batool
+
+**Status:** Prepublication technical manuscript (2026)
+
+[Read the technical research report (PDF)](research/reports/NovaShield_Flow_Validation_Research_Report.pdf)
+
+This study investigates the consistency of NovaShield's network-flow
+feature calculations against preserved CICFlowMeter reference outputs.
+
+**Key result:** 468 out of 468 numerical comparisons matched across
+five controlled synthetic test fixtures, within the defined
+comparison tolerances.
+
+All ten supporting PCAP and reference CSV files also passed
+SHA-256 integrity verification.
+
+The study documents initial discrepancies, engineering corrections,
+and successful local revalidation.
+
+**Research limitation:** These findings demonstrate agreement on
+the tested synthetic fixtures. They do not establish real-world
+intrusion-detection accuracy, production readiness, or independent
+external replication.
+
+**Related research software:**
+[Zenodo DOI: 10.5281/zenodo.24056070](https://doi.org/10.5281/zenodo.24056070)
+
+---
+
 <div align="center">
 
 # 🛡️ NovaShield
