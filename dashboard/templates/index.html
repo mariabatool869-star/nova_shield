@@ -8,79 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        .approval-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .btn-approve {
-            background: #10b981;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .btn-approve:hover {
-            background: #059669;
-            transform: scale(1.05);
-        }
-        .btn-reject {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .btn-reject:hover {
-            background: #dc2626;
-            transform: scale(1.05);
-        }
-        .shap-explanations {
-            background: rgba(59, 130, 246, 0.1);
-            border-left: 4px solid #3b82f6;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 15px 0;
-        }
-        .shap-title {
-            font-weight: bold;
-            color: #3b82f6;
-            margin-bottom: 10px;
-        }
-        .shap-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            font-size: 13px;
-        }
-        .confidence-badge {
-            display: inline-block;
-            background: #10b981;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 12px;
-            margin-left: 10px;
-        }
-        .model-tag {
-            display: inline-block;
-            background: #8b5cf6;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            margin-left: 5px;
-        }
-    </style>
+
 </head>
 <body>
 
@@ -88,7 +16,7 @@
         <img src="{{ url_for('static', filename='shield.gif') }}" alt="NovaShield">
     </div>
 
-    <div class="ui-layer">
+    <div class="ui-layer{% if config.get('NOVASHIELD_OFFLINE_ONLY', false) %} offline-research-mode{% endif %}">
         <header>
             <div class="logo-container">
                 <svg class="logo-mark" viewBox="0 0 32 32" fill="none">
@@ -106,13 +34,151 @@
                 <div class="status-indicator" id="vault-status">
                     <span class="dot checking"></span> Vault
                 </div>
-                <select id="role-selector" onchange="setRole(this.value)">
-                    <option value="admin">Admin (Approver)</option>
-                    <option value="viewer">Viewer</option>
-                </select>
-                <button id="scan-btn" class="btn-primary" onclick="triggerScan()">▶ Run Scan</button>
+                <span id="auth-status" role="status" aria-live="polite">Not signed in</span>
+                <form id="login-form" autocomplete="on">
+                    <label for="admin-password">Admin password</label>
+                    <input
+                        id="admin-password"
+                        name="password"
+                        type="password"
+                        autocomplete="current-password"
+                      required
+                    >
+                    <button id="login-btn" type="submit">Sign In</button>
+                </form>
+                <button id="logout-btn" type="button" hidden>Sign Out</button>
+                <button id="scan-btn" class="btn-primary" id="scan-btn" disabled>▶ Run Scan</button>
             </div>
         </header>
+
+        <!-- NX-01: Completed real-network observations, not continuous capture -->
+        <section class="panel" id="telemetry-panel"
+                 aria-labelledby="telemetry-heading">
+            <div class="panel-header">
+                <h2 id="telemetry-heading">NX-01 OPTIC: Real Network Observation</h2>
+                <span class="badge" id="telemetry-capture-status">
+                    Capture inactive
+                </span>
+            </div>
+            <div class="details-container">
+                <p id="telemetry-status" role="status" aria-live="polite">
+                    Sign in as an administrator to view the last observation.
+                </p>
+                <div class="telemetry-metrics">
+                    <p>Observed packets:
+                        <strong id="telemetry-packets">—</strong>
+                    </p>
+                    <p>TCP: <strong id="telemetry-tcp">—</strong></p>
+                    <p>UDP: <strong id="telemetry-udp">—</strong></p>
+                    <p>Other: <strong id="telemetry-other">—</strong></p>
+                </div>
+                <p>Interface: <span id="telemetry-interface">—</span></p>
+                <p>Observed at: <span id="telemetry-timestamp">—</span></p>
+                <p>Snapshot age: <span id="telemetry-age">—</span></p>
+                <p>Provenance: <span id="telemetry-provenance">—</span></p>
+                <p>
+                    <strong>AI inference:</strong> Not run ·
+                    <strong>Firewall enforcement:</strong> Disabled
+                </p>
+                <p>
+                    Completed observation only. This panel does not imply
+                    cont or active threat detection.
+                </p>
+            </div>
+        </section>
+
+        <!-- Offline research PCAP measurements; no AI inference -->
+        <section class="panel" id="offline-pcap-panel"
+                 aria-labelledby="offline-pcap-heading">
+            <div class="panel-header">
+                <h2 id="offline-pcap-heading">
+                    NX-03 OPTIC: Network Flow Analysis
+                </h2>
+            </div>
+
+            <div class="details-container">
+                <p>
+                    Inspect measured flow features from the allowlisted
+                    synthetic PCAP. No live network capture or enforcement.
+                </p>
+
+                <button id="offline-pcap-run-btn"
+                        type="button" disabled>
+                    Analyze Offline PCAP
+                </button>
+
+                <p id="offline-pcap-status"
+                   role="status" aria-live="polite">
+                    Sign in as an administrator to inspect offline features.
+                </p>
+
+
+                <div id="offline-pcap-summary"
+                     aria-live="polite"></div>
+
+
+
+
+                <p>
+                    <strong>AI safety boundary:</strong>
+                    Random Forest, LightGBM and SHAP are not run on these
+                    measurements until CICFlowMeter feature-value parity
+                    has been independently verified.
+                </p>
+
+                <div class="table-container">
+                    <table class="audit-table"
+                           id="offline-pcap-feature-table">
+                        <thead>
+                            <tr>
+                                <th>Network-flow feature</th>
+                                <th>Measured value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="offline-pcap-feature-body">
+                            <tr>
+                                <td colspan="2" class="empty-table">
+                                    No offline PCAP analysis requested.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- novashield-captured-traffic-ui-v1: saved capture only -->
+                <div id="captured-traffic-panel" style="margin:20px 0;padding:16px;border:1px solid #64748b;border-radius:12px;">
+                    <h3>Captured Traffic — en0 (Saved PCAP)</h3>
+                    <p>Load statistics from the saved 10-second capture. This does not start live capture.</p>
+                    <p id="captured-traffic-timestamp">Capture time: not loaded yet</p>
+                    <button id="captured-traffic-load-btn" type="button">Load Captured Traffic</button>
+                    <p id="captured-traffic-status" role="status" aria-live="polite">Administrator sign-in required.</p>
+                    <div id="captured-traffic-results" aria-live="polite"></div>
+                    <p><strong>AI:</strong> NOT RUN · <strong>Enforcement:</strong> DISABLED · <strong>Feature values:</strong> NOT VALIDATED (feature parity unverified)</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="phase6-offline-panel"
+                 aria-labelledby="phase6-heading">
+            <div class="panel-header">
+                <h2 id="phase6-heading">NX-02 AI Model Validation: Random Forest + LightGBM + SHAP</h2>
+            </div>
+            <div class="details-container">
+                <p>Research demonstration using an existing CIC-IDS2017
+                   dataset. This does not monitor live traffic or
+                   create security alerts.</p>
+                <label for="phase6-row-index">Dataset row (0–19999)</label>
+                <input id="phase6-row-index" type="number"
+                       min="0" max="19999" step="1" value="0">
+                <button id="phase6-run-btn" type="button" disabled>
+                    Run Offline AI Analysis
+                </button>
+                <p id="phase6-status" role="status" aria-live="polite">
+                    Sign in as administrator to run offline analysis.
+                </p>
+                <div id="phase6-results" aria-live="polite"></div>
+            </div>
+        </section>
 
         <main class="split-view">
             <section class="panel feed-panel">
@@ -121,13 +187,19 @@
                     <span class="badge" id="feed-count">0</span>
                 </div>
                 <div id="alert-feed" class="feed-container">
-                    <div class="empty-feed">Monitoring network traffic...</div>
+                    <div class="empty-feed">
+                        {% if config.get('NOVASHIELD_OFFLINE_ONLY', false) %}
+                        Offline mode — live monitoring is disabled.
+                        {% else %}
+                        Waiting for network alerts...
+                        {% endif %}
+                    </div>
                 </div>
             </section>
 
-            <son class="panel details-panel">
+            <section class="panel details-panel">
                 <div class="panel-header">
-                    <h2>🧠 NX-02 CORTEX: HYBRID Detection + SHAP</h2>
+                    <h2>🧠 NX-02 CORTEX: Threat Intelligence</h2>
                 </div>
                 <div id="details-container" class="details-container">
                     <div class="empty-details">
@@ -141,14 +213,14 @@
             </section>
         </main>
 
-        <div class="audit-panel">
+<div class="audit-panel">
             <div class="audit-header">
                 <h3>⛓️ NX-04 VAULT: Immutable Audit Trail</h3>
                 <span class="audit-subtitle">Records: Detection + Explanation + Decision</span>
             </div>
             <div class="table-container">
                 <table class="audit-table">
-     thead>
+     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Time (UTC)</th>
@@ -167,93 +239,11 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script src="{{ url_for('static', filename='socket.io-4.8.1.min.js') }}"></script>
     <script>
-        // Handle alert selection and display
-        function selectAlert(alertElement) {
-            document.querySelectorAll('.feed-item').forEach(e => e.classList.remove('active'));
-            alertElement.classList.add('active');
-            
-            const attackType = alertElement.dataset.attack;
-            const confidence = parseFloat(alertElement.dataset.confidence);
-            const explanation = alertElement.dataset.explanation;
-            
-            displayDetails(attackType, confidence, explanation);
-        }
-
-        function displayDetails(attack, confidence, explanation) {
-            const container = document.getElementById('details-container');
-            
-            let explanationHtml = '';
-            try {
-                const expArray = JSON.parse(explanation);
-                if (expArray.length > 0) {
-                    explanationHtml = '<div class="shap-explanations"><div class="shap-title">Top Contributing Factors (SHAP):</div>';
-                    expArray.slice(0, 5).forEach((exp, idx) => {
-                        const importance = (exp.importance * 100).toFixed(2);
-                        explanationHtml += `<div class="shap-item"><span>${idx+1}. ${exp.feature}</span><span>${importance}%</span></div>`;
-                    });
-                    explanationHtml += '</div>';
-                }
-            } catch(e) {}
-            
-            container.innerHTML = `
-                <div style="padding: 20px;">
-                    <div style="margin-bottom: 20px;">
-                        <h3 style="margin-bottom: 10px;">
-                            Attack Detected
-                            <span class="confidence-badge">${(confidence * 100).toFixed(2)}%</span>
-                            <span class="model-tag">RandomForest 99.66%</span>
-                        </h3>
-                        <div style="font-size: 28px; color: #ef4444; font-weight: bold;">
-                            ${attack}
-                        </div>
-                    </div>
-                    
-                    ${explanationHtml}
-                    
-                    <div style="margin-top: 20px; padding: 15px; background: rgba(255,215,0,0.1); border-radius: 6px;">
-                        <p style="margin: 0; font-weight: bold; color: #ffd700;">⚠️ AWAITHUMAN APPROVAL</p>
-                        <p style="margin: 5px 0 0 0; font-size: 13px;">Network analyst must review and approve/reject</p>
-                    </div>
-                    
-                    <div class="approval-buttons">
-                        <button class="btn-approve" onclick="approveAlert('${attack}')">✅ APPROVE (Block)</button>
-                        <button class="btn-reject" onclick="rejectAlert('${attack}')">❌ REJECT (Continue)</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function approveAlert(attack) {
-            alert(`✅ Approved: ${attack}\n\nAction: Block IP + Save to Vault`);
-            updateAuditLog(attack, 'APPROVED', 'BLOCKED');
-        }
-
-        function rejectAlert(attack) {
-            alert(`❌ Rejected: ${attack}\n\nAction: Continue Monitoring`);
-            updateAuditLog(attack, 'REJECTED', 'MONITORING');
-        }
-
-        function updateAuditLog(attack, decision, action) {
-            const auditBody = dgetElementById('audit-body');
-            if (auditBody.innerHTML.includes('No decisions yet')) {
-                auditBody.innerHTML = '';
-            }
-            
-            const now = new Date().toISOString();
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>#${Date.now()}</td>
-                <td>${now}</td>
-                <td>${attack}</td>
-                <td>99.66%</td>
-                <td><strong>${decision}</strong></td>
-                <td>maria@novashield</td>
-                <td>${action}</td>
-            `;
-            auditBody.insertBefore(row, auditBody.firstChild);
-        }
+    const NOVASHIELD_FRONTEND_OFFLINE =
+        {{ 'true' if config.get('NOVASHIELD_OFFLINE_ONLY', false) else 'false' }};
     </script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

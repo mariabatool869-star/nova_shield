@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "nova_flows": 1,
+  "cic_flows": 1,
+  "matches": 78,
+  "differences": [],
+  "unmapped": [],
+  "pairing": [
+    0
+  ],
+  "equally_scoring_pairings": 1,
+  "test": 9,
+  "packets": 8,
+  "pcap_sha256": "fba55335bc557dacd1f3aa7dc7bd0d6414bc758266c0814465ebb80e9e539cba",
+  "csv_sha256": "6ee4999299d4a85c3d31dc090780b1cc1ce285d1827dec9d5ec42d73c7220770"
+}

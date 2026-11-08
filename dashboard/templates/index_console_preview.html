@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#08111f">
+  <title>NovaShield | Premium Security Operations Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_console_preview.css') }}">
+</head>
+<body class="console-preview-body">
+  <div class="ui-layer{% if config.get('NOVASHIELD_OFFLINE_ONLY', false) %} offline-research-mode{% endif %}">
+    <aside class="premium-sidebar" aria-label="NovaShield navigation">
+      <a class="premium-brand" href="#command-overview" aria-label="NovaShield Command Centre">
+        <span class="premium-brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 36 42" fill="none"><path d="M18 2 33 8v12c0 10-6.5 16-15 20C9.5 36 3 30 3 20V8L18 2Z" stroke="currentColor" stroke-width="2"/><path d="m18 10 1.5 7.5L26 20l-6.5 2.5L18 30l-1.5-7.5L10 20l6.5-2.5L18 10Z" fill="currentColor"/></svg>
+        </span>
+        <span class="premium-brand-copy"><strong>NOVA<span>SHIELD</span></strong><small>SECURITY OPERATIONS</small></span>
+      </a>
+      <div class="nav-group">
+        <p class="nav-heading">WORKSPACE</p>
+        <nav aria-label="Workspace">
+          <a class="premium-nav-active" href="#command-overview"><span class="nav-glyph" aria-hidden="true">⌂</span>Command Centre</a>
+          <a href="#alert-feed"><span class="nav-glyph" aria-hidden="true">◉</span>Threat Monitoring</a>
+          <a href="#details-container"><span class="nav-glyph" aria-hidden="true">◇</span>Alert Investigation</a>
+          <a href="#telemetry-panel"><span class="nav-glyph" aria-hidden="true">⌁</span>Network Intelligence</a>
+        </nav>
+      </div>
+      <div class="nav-group">
+        <p class="nav-heading">RESEARCH &amp; EVIDENCE</p>
+        <nav aria-label="Research and evidence">
+          <a href="#captured-traffic-panel"><span class="nav-glyph" aria-hidden="true">▤</span>Saved Capture</a>
+          <a href="#phase6-offline-panel"><span class="nav-glyph" aria-hidden="true">✧</span>Model Research</a>
+          <a href="#premium-audit-trail"><span class="nav-glyph" aria-hidden="true">▣</span>Audit Trail</a>
+        </nav>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-research-tag"><span class="indicator amber" aria-hidden="true"></span><span><strong>Research prototype</strong><small>Local environment · capabilities vary by mode</small></span></div>
+        <div class="gif-background" aria-hidden="true">
+          <img src="{{ url_for('static', filename='shield.gif') }}" alt="" loading="lazy">
+        </div>
+        <p class="sidebar-version">NOVASHIELD / v2.0 HYBRID IDS</p>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="topbar-title"><span class="eyebrow">NOVASHIELD <span class="slash">/</span> SECURITY OPERATIONS</span><h1>Command Centre</h1><p>Observation, investigation and explainable security research</p></div>
+        <div class="topbar-actions">
+          <div class="status-strip" aria-label="Environment status">
+            <span class="mode-chip"><span class="indicator green" aria-hidden="true"></span> OFFLINE RESEARCH</span>
+            <div class="status-indicator" id="db-status"><span class="dot checking"></span> PostgreSQL</div>
+            <div class="status-indicator" id="vault-status"><span class="dot checking"></span> Vault</div>
+          </div>
+          <div class="auth-bar">
+            <span id="auth-status" role="status" aria-live="polite">Not signed in</span>
+            <form id="login-form" autocomplete="on">
+              <label class="sr-only" for="admin-password">Admin password</label>
+              <input id="admin-password" name="password" type="password" autocomplete="current-password" placeholder="Admin password" required>
+              <button id="login-btn" type="submit" class="button-secondary">Sign in</button>
+            </form>
+            <button id="logout-btn" type="button" class="button-secondary" hidden>Sign out</button>
+            <button id="scan-btn" type="button" class="btn-primary" disabled>Run scan</button>
+          </div>
+        </div>
+      </header>
+
+      <main id="command-overview" class="console-main">
+        <section class="capability-grid" aria-label="Platform capability status">
+          <article class="capability-card"><span class="cap-icon" aria-hidden="true">◎</span><span class="cap-label">THREAT MONITORING</span><strong>Inactive</strong><small>Continuous monitoring disabled</small></article>
+          <article class="capability-card"><span class="cap-icon" aria-hidden="true">⌁</span><span class="cap-label">FLOW ANALYSIS</span><strong>Research</strong><small>Offline PCAP feature inspection</small></article>
+          <article class="capability-card"><span class="cap-icon" aria-hidden="true">✧</span><span class="cap-label">AI INFERENCE</span><strong>Offline only</strong><small>Experimental model workflow</small></article>
+          <article class="capability-card"><span class="cap-icon" aria-hidden="true">⬡</span><span class="cap-label">RESPONSE CONTROLS</span><strong>Disabled</strong><small>No automated enforcement</small></article>
+        </section>
+
+        <div class="research-notice" role="note"><span class="notice-symbol" aria-hidden="true">ⓘ</span><div><strong>Research environment</strong><span> Packet observation is real, but the last snapshot is historical. Continuous monitoring, live AI detection and automatic response are not enabled.</span></div></div>
+
+        <div class="operations-grid">
+          <section class="panel" id="telemetry-panel" aria-labelledby="telemetry-heading">
+            <div class="panel-header"><div><span class="section-label">NETWORK OBSERVATION / NX-01</span><h2 id="telemetry-heading">Real network observation</h2></div><span class="status-pill amber" id="telemetry-capture-status">Capture inactive</span></div>
+            <div class="panel-content">
+              <p id="telemetry-status" class="panel-description" role="status" aria-live="polite">Sign in as an administrator to view the last observation.</p>
+              <div class="telemetry-metrics">
+                <div class="metric"><span>Observed packets</span><strong id="telemetry-packets">—</strong></div>
+                <div class="metric"><span>TCP</span><strong id="telemetry-tcp">—</strong></div>
+                <div class="metric"><span>UDP</span><strong id="telemetry-udp">—</strong></div>
+                <div class="metric"><span>Other</span><strong id="telemetry-other">—</strong></div>
+              </div>
+              <dl class="telemetry-metadata">
+                <div><dt>Interface</dt><dd id="telemetry-interface">—</dd></div>
+                <div><dt>Source</dt><dd id="telemetry-provenance">—</dd></div>
+                <div><dt>Observed at</dt><dd id="telemetry-timestamp">—</dd></div>
+                <div><dt>Snapshot age</dt><dd id="telemetry-age">—</dd></div>
+              </dl>
+              <div class="assurance-line"><span>AI INFERENCE <strong>Not run</strong></span><span>ENFORCEMENT <strong>Disabled</strong></span></div>
+            </div>
+          </section>
+
+          <section class="panel" id="offline-pcap-panel" aria-labelledby="offline-pcap-heading">
+            <div class="panel-header"><div><span class="section-label">NETWORK INTELLIGENCE / NX-03</span><h2 id="offline-pcap-heading">Flow analysis &amp; saved capture</h2></div><span class="status-pill">OFFLINE PCAP</span></div>
+            <div class="panel-content">
+              <p class="panel-description">Inspect measured flow features from the allowlisted synthetic PCAP. This does not start network capture or enforcement.</p>
+              <button id="offline-pcap-run-btn" type="button" disabled>Analyze offline PCAP</button>
+              <p id="offline-pcap-status" class="field-status" role="status" aria-live="polite">Sign in as an administrator to inspect offline features.</p>
+              <div id="offline-pcap-summary" aria-live="polite"></div>
+              <div class="table-container feature-table-container"><table class="audit-table" id="offline-pcap-feature-table"><thead><tr><th>Network-flow feature</th><th>Measured value</th></tr></thead><tbody id="offline-pcap-feature-body"><tr><td colspan="2" class="empty-table">No offline PCAP analysis requested.</td></tr></tbody></table></div>
+              <div class="saved-capture" id="captured-traffic-panel">
+                <div class="saved-heading"><div><h3>Saved capture <span class="muted">· en0</span></h3><p>Inspect statistics from a saved capture. No new capture is started.</p></div><span class="saved-icon" aria-hidden="true">▤</span></div>
+                <p id="captured-traffic-timestamp" class="subtle">Capture time: not loaded yet</p>
+                <button id="captured-traffic-load-btn" type="button">Load captured traffic</button>
+                <p id="captured-traffic-status" class="field-status" role="status" aria-live="polite">Administrator sign-in required.</p>
+                <div id="captured-traffic-results" aria-live="polite"></div>
+                <p class="research-safety">AI: not run · Enforcement: disabled · Feature values: research validation pending</p>
+              </div>
+              <p class="research-safety">Offline feature measurements do not establish model accuracy or production readiness.</p>
+            </div>
+          </section>
+        </div>
+
+        <div class="investigation-grid">
+          <section class="panel feed-panel" aria-labelledby="feed-heading"><div class="panel-header"><div><span class="section-label">SECURITY WORKSPACE / 01</span><h2 id="feed-heading">Threat monitoring</h2></div><span class="feed-counter" id="feed-count">0</span></div><div id="alert-feed" class="feed-container"><div class="empty-feed">Offline research mode — no continuous live monitoring is running.</div></div></section>
+          <section class="panel details-panel" aria-labelledby="investigation-heading"><div class="panel-header"><div><span class="section-label">CORTEX / NX-02</span><h2 id="investigation-heading">Alert investigation</h2></div><span class="status-pill">ANALYST REVIEW</span></div><div id="details-container" class="details-container"><div class="empty-details"><span class="empty-icon" aria-hidden="true">◇</span><h3>No alert selected</h3><p>When a registered alert is available, its explanation and analyst decisions appear here.</p><p class="subtle">Offline model research does not create live alerts.</p></div></div></section>
+        </div>
+
+        <section class="panel" id="phase6-offline-panel" aria-labelledby="phase6-heading"><div class="panel-header"><div><span class="section-label">EXPLAINABILITY / NX-02</span><h2 id="phase6-heading">Model research &amp; explainability</h2></div><span class="status-pill">EXPERIMENTAL</span></div><div class="panel-content research-content"><div><p class="panel-description">Run the existing offline Random Forest, LightGBM and SHAP research workflow on an allowlisted CIC-IDS2017 dataset row. This does not inspect live traffic.</p><div class="model-controls"><label for="phase6-row-index">Dataset row (0–19999)</label><div class="model-input-row"><input id="phase6-row-index" type="number" min="0" max="19999" step="1" value="0"><button id="phase6-run-btn" type="button" disabled>Run offline AI analysis</button></div></div><p id="phase6-status" class="field-status" role="status" aria-live="polite">Sign in as administrator to run offline analysis.</p><p class="research-safety">Research models are experimental and not validated for production or real-time protection.</p></div><div id="phase6-results" aria-live="polite"></div></div></section>
+
+        <section class="audit-panel" id="premium-audit-trail" aria-labelledby="audit-heading"><div class="audit-header"><div><span class="section-label">EVIDENCE &amp; GOVERNANCE / NX-04</span><h2 id="audit-heading">VAULT · Audit trail</h2></div><span class="audit-subtitle">Decision records · integrity assessed separately</span></div><div class="table-container"><table class="audit-table"><thead><tr><th>ID</th><th>Time (UTC)</th><th>Attack type</th><th>Confidence</th><th>Decision</th><th>Analyst</th><th>Status</th></tr></thead><tbody id="audit-body"><tr><td colspan="7" class="empty-table">No recorded decisions to display.</td></tr></tbody></table></div></section>
+        <footer class="console-footer"><span>© NOVASHIELD · SECURE RESEARCH CONSOLE</span><span>Local prototype · no production protection claims</span></footer>
+      </main>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='socket.io-4.8.1.min.js') }}"></script>
+  <script>const NOVASHIELD_FRONTEND_OFFLINE = {{ 'true' if config.get('NOVASHIELD_OFFLINE_ONLY', false) else 'false' }};</script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

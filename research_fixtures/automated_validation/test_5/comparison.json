@@ -1,0 +1,9 @@
+{
+  "status": "FLOW_COUNT_MISMATCH",
+  "nova_flows": 2,
+  "cic_flows": 1,
+  "test": 5,
+  "packets": 5,
+  "pcap_sha256": "8835382a16907b1ca8fe46d3babc345c467647d8dc115d256241a04581e9cfd5",
+  "csv_sha256": "5e6e01a788fa44ebe70b6550dea099038c3f9257824a9f4c8be97e23d6f85436"
+}

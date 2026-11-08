@@ -1,0 +1,24 @@
+{
+  "status": "REVIEW",
+  "nova_flows": 1,
+  "cic_flows": 1,
+  "matches": 77,
+  "differences": [
+    {
+      "nova_flow": 1,
+      "cic_flow": 1,
+      "feature": "Flow Bytes/s",
+      "nova": "235.71426965752536",
+      "cic": "235.71428571428572"
+    }
+  ],
+  "unmapped": [],
+  "pairing": [
+    0
+  ],
+  "equally_scoring_pairings": 1,
+  "test": 7,
+  "packets": 8,
+  "pcap_sha256": "93a837b8771c4a171dbc237de61e4a3385ab77b714837d5b05f40383cd8ce65b",
+  "csv_sha256": "3786f9c8930918a0da8bcd8c81d812c6be3dd05b2254f44da190eb16d9206cb6"
+}
